@@ -1,0 +1,83 @@
+
+{
+  "integral": {
+    "title": "Integral of the Day",
+    "icon": "∫",
+    "category": "MATHEMATICS",
+    "description": "Solve a curated integral, request a hint, and understand the solution.",
+    "duration": "5–10 min",
+    "page": "Integral"
+  },
+  "mental_math": {
+    "title": "Mental Maths Arena",
+    "icon": "∑",
+    "category": "MENTAL AGILITY",
+    "description": "Practise arithmetic, percentages, fractions, and numerical reasoning.",
+    "duration": "5–10 min",
+    "page": "Mental Maths"
+  },
+  "english": {
+    "title": "English Lab",
+    "icon": "ᛒ",
+    "category": "LANGUAGE",
+    "description": "Explore vocabulary, phrasal verbs, and figures of speech.",
+    "duration": "5 min",
+    "page": "English Lab"
+  },
+  "linux": {
+    "title": "Linux Command",
+    "icon": "🐧",
+    "category": "CYBERSECURITY",
+    "description": "Learn a command, understand its flags, and predict its output.",
+    "duration": "5 min",
+    "page": "Linux"
+  },
+  "dsa": {
+    "title": "DSA Challenge",
+    "icon": "⌘",
+    "category": "PROGRAMMING",
+    "description": "Study a problem, derive an approach, and analyse complexity.",
+    "duration": "10 min",
+    "page": "DSA"
+  },
+  "physics": {
+    "title": "Physics Problem",
+    "icon": "⚛",
+    "category": "PHYSICS",
+    "description": "Apply mathematical reasoning to a physics problem with units.",
+    "duration": "5–10 min",
+    "page": "Physics"
+  },
+  "biology": {
+    "title": "Biology & Biochemistry",
+    "icon": "⌬",
+    "category": "LIFE SCIENCES",
+    "description": "Understand biological mechanisms and biochemical pathways.",
+    "duration": "5 min",
+    "page": "Life Sciences"
+  },
+  "wildcard": {
+    "title": "Wildcard",
+    "icon": "✦",
+    "category": "EXPLORE",
+    "description": "Discover something unexpected across science, history, or technology.",
+    "duration": "3–5 min",
+    "page": "Wildcard"
+  },
+  "gita": {
+    "title": "Verse & Reflection",
+    "icon": "❋",
+    "category": "PHILOSOPHY",
+    "description": "Read a Bhagavad Gita verse with context and a reflection prompt.",
+    "duration": "3 min",
+    "page": "Gita"
+  },
+  "skill": {
+    "title": "Skill of the Week",
+    "icon": "↗",
+    "category": "GROWTH",
+    "description": "Build one practical technical, communication, or life skill.",
+    "duration": "10 min",
+    "page": "Weekly Skill"
+  }
+}
