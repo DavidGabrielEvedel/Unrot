@@ -1,4 +1,4 @@
-
+import random
 import streamlit as st
 import sympy as sp
 from styles import apply_styles
@@ -12,6 +12,284 @@ from logic import (
 )
 
 apply_styles()
+
+# ----- MENTAL MATHS ENGINE -----
+
+def generate_sum(digits, terms):
+    numbers = []
+
+    for i in range(terms):
+        number = random.randint(10 ** (digits - 1), (10 ** digits) - 1)
+
+        if i == 0:
+            sign = 1
+        else:
+            sign = random.choice([1, -1])
+
+        numbers.append((sign, number))
+
+    answer = sum(sign * number for sign, number in numbers)
+
+    return numbers, answer
+
+
+def generate_multiplication():
+    a = random.randint(100, 999)
+    b = random.randint(10, 99)
+
+    return f"{a} × {b}", a * b
+
+
+def generate_division():
+    dividend = random.randint(1000, 9999)
+    divisor = random.randint(10, 99)
+
+    quotient = dividend // divisor
+    remainder = dividend % divisor
+
+    return f"{dividend} ÷ {divisor}", f"{quotient},{remainder}"
+
+
+def generate_alphabet_sum():
+    letters = []
+    answer = 0
+
+    for i in range(20):
+        letter = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+        value = ord(letter) - ord("A") + 1
+
+        if i == 0:
+            sign = 1
+        else:
+            sign = random.choice([1, -1])
+
+        answer += sign * value
+        letters.append((sign, letter))
+
+    return letters, answer
+def generate_single_digit_chain():
+
+    numbers = []
+    running_total = 0
+
+    for _ in range(30):
+
+        if running_total == 0:
+            sign = 1
+        else:
+            sign = random.choice([1, -1])
+
+        if sign == 1:
+            number = random.randint(1, 9)
+            running_total += number
+
+        else:
+            number = random.randint(1, min(9, running_total))
+            running_total -= number
+
+        numbers.append((sign, number))
+
+    return numbers, running_total
+
+def generate_mental_maths_set():
+
+    questions = []
+
+    # 1–2: Two-digit, 20-term sums
+    for _ in range(2):
+        numbers, answer = generate_sum(2, 20)
+
+        questions.append({
+            "type": "sum",
+            "title": "Double-digit addition & subtraction",
+            "numbers": numbers,
+            "answer": str(answer),
+        })
+
+    # 3–4: Three-digit, 5-term sums
+    for _ in range(2):
+        numbers, answer = generate_sum(3, 5)
+
+        questions.append({
+            "type": "sum",
+            "title": "Triple-digit addition & subtraction",
+            "numbers": numbers,
+            "answer": str(answer),
+        })
+
+    # 5–6: Multiplication
+    for _ in range(2):
+        question, answer = generate_multiplication()
+
+        questions.append({
+            "type": "normal",
+            "title": "Multiplication",
+            "question": question,
+            "answer": str(answer),
+        })
+
+    # 7–8: Division
+    for _ in range(2):
+        question, answer = generate_division()
+
+        questions.append({
+            "type": "division",
+            "title": "Division (Quotient, Remainder)",
+            "question": question,
+            "answer": answer,
+        })
+
+    # 9: Alphabetical sum
+    letters, answer = generate_alphabet_sum()
+
+    questions.append({
+        "type": "alphabet",
+        "title": "Alphabetical mental maths",
+        "numbers": letters,
+        "answer": str(answer),
+    })
+    # 10: 30-line single-digit addition and subtraction
+    numbers, answer = generate_single_digit_chain()
+
+    questions.append({
+        "type": "sum",
+        "title": "Single-digit addition & subtraction · 30 lines",
+        "numbers": numbers,
+        "answer": str(answer),
+    })
+    return questions
+
+
+def render_mental_maths():
+
+    st.caption("ABACUS MENTAL CALCULATION")
+
+    if "mental_maths_questions" not in st.session_state:
+        st.session_state.mental_maths_questions = generate_mental_maths_set()
+
+    questions = st.session_state.mental_maths_questions
+
+    st.markdown(
+        """
+        <div style="
+            background: #E7F3F1;
+            padding: 16px 20px;
+            margin: 15px 0 25px 0;
+            border-left: 3px solid #087F8C;
+        ">
+            <span style="font-family: Georgia, serif; color: #18343A;">
+                Calculate mentally. No calculator. No written working.
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    alphabet_values = {
+        chr(65 + i): i + 1 for i in range(26)
+    }
+
+    for index, question in enumerate(questions):
+
+        st.markdown("---")
+
+        st.markdown(
+            f"**{index + 1:02d}. {question['title']}**"
+        )
+
+        if question["type"] == "sum":
+
+            for sign, number in question["numbers"]:
+                symbol = "+" if sign == 1 else "−"
+                st.markdown(f"`{symbol} {number}`")
+
+        elif question["type"] == "alphabet":
+
+            st.caption("A = 1 · B = 2 · C = 3 · ... · Z = 26")
+
+            for sign, letter in question["numbers"]:
+                symbol = "+" if sign == 1 else "−"
+                st.markdown(f"`{symbol} {letter}`")
+
+        else:
+            st.markdown(
+                f"### {question['question']}"
+            )
+
+        st.text_input(
+            "Your answer",
+            key=f"mental_answer_{index}",
+            placeholder=(
+                "Quotient, remainder"
+                if question["type"] == "division"
+                else "Enter your answer"
+            ),
+        )
+
+    st.markdown("---")
+
+    if st.button(
+        "Check all answers",
+        type="primary",
+        use_container_width=True,
+    ):
+
+        score = 0
+
+        for index, question in enumerate(questions):
+
+            user_answer = st.session_state.get(
+                f"mental_answer_{index}", ""
+            ).strip().replace(" ", "")
+
+            correct_answer = question["answer"]
+
+            if question["type"] == "division":
+                is_correct = user_answer == correct_answer
+
+            else:
+                try:
+                    is_correct = int(user_answer) == int(correct_answer)
+                except ValueError:
+                    is_correct = False
+
+            if is_correct:
+                score += 1
+                st.success(f"Question {index + 1}: Correct!")
+
+            else:
+                st.error(
+                    f"Question {index + 1}: Incorrect. "
+                    f"Correct answer: {correct_answer}"
+                )
+
+        st.session_state.mental_maths_score = score
+
+        st.markdown(f"## Your score: {score}/10")
+
+        if score == 10:
+            st.balloons()
+            st.success("Perfect calculation!")
+
+        elif score >= 6:
+            st.success("Good work. Keep practising!")
+
+        else:
+            st.info("Keep practising. Speed comes with consistency.")
+
+    if st.button(
+        "Generate Different Set",
+        use_container_width=True,
+    ):
+
+        st.session_state.mental_maths_questions = generate_mental_maths_set()
+
+        for index in range(10):
+            st.session_state.pop(f"mental_answer_{index}", None)
+
+        st.session_state.pop("mental_maths_score", None)
+
+        st.rerun()
 
 # ----- Easier ISC / JEE Integral Alternative -----
 
@@ -318,6 +596,13 @@ else:
             else:
                 st.error("Unable to load the selected integral.")
             render_exam_integral()
+            
+        # ----- MENTAL MATHS -----
+
+        elif selected_page == "Mental Maths":
+
+            render_mental_maths()
+
         # ----- OTHER ACTIVITY PLACEHOLDERS -----
 
         else:
