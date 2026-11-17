@@ -2,7 +2,7 @@
 import json
 import random
 import streamlit as st
-
+from datetime import date
 from datetime import date, datetime
 from pathlib import Path
 
@@ -137,3 +137,70 @@ def get_random_exam_integral():
     st.session_state.current_exam_integral_id = selected["id"]
 
     return selected
+
+# ----- ENGLISH LAB -----
+
+PHRASAL_VERB_FILE = BASE_DIR / "data_sources" / "phrasal_verbs.jsonl"
+
+
+@st.cache_data
+def load_phrasal_verbs():
+    entries = []
+
+    with PHRASAL_VERB_FILE.open("r", encoding="utf-8") as file:
+        for line in file:
+            if line.strip():
+                entries.append(json.loads(line))
+
+    return entries
+
+
+def get_daily_phrasal_verb():
+    entries = load_phrasal_verbs()
+
+    if not entries:
+        return None
+
+    previous_id = st.session_state.get("current_phrasal_verb_id")
+
+    available = [
+        entry for entry in entries
+        if entry["id"] != previous_id
+    ]
+
+    selected = random.choice(available or entries)
+
+    st.session_state.current_phrasal_verb_id = selected["id"]
+
+    return selected
+
+# ----- ENGLISH LAB: VOCABULARY -----
+
+VOCABULARY_FILE = BASE_DIR / "data_sources" / "vocabulary.jsonl"
+
+
+@st.cache_data
+def load_vocabulary():
+
+    entries = []
+
+    with VOCABULARY_FILE.open("r", encoding="utf-8") as file:
+        for line in file:
+            if line.strip():
+                entries.append(json.loads(line))
+
+    return entries
+
+
+def get_daily_vocabulary():
+
+    entries = load_vocabulary()
+
+    if len(entries) < 3:
+        return entries
+
+    today = date.today().isoformat()
+
+    daily_random = random.Random(today)
+
+    return daily_random.sample(entries, 3)

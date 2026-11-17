@@ -1,4 +1,5 @@
 import random
+import time
 import streamlit as st
 import sympy as sp
 from styles import apply_styles
@@ -9,10 +10,22 @@ from logic import (
     load_integrals,
     get_random_integral,
     get_random_exam_integral,
+    get_daily_phrasal_verb,
+    get_daily_vocabulary,
 )
-
 apply_styles()
 
+@st.fragment(run_every="1s")
+def live_timer():
+
+    if st.session_state.mental_maths_end is not None:
+        elapsed = st.session_state.mental_maths_end
+    else:
+        elapsed = time.perf_counter() - st.session_state.mental_maths_start
+
+    minutes, seconds = divmod(int(elapsed), 60)
+
+    st.metric("⏱️ Time Taken", f"{minutes:02d}:{seconds:02d}")
 # ----- MENTAL MATHS ENGINE -----
 
 def generate_sum(digits, terms):
@@ -168,6 +181,25 @@ def render_mental_maths():
         st.session_state.mental_maths_questions = generate_mental_maths_set()
 
     questions = st.session_state.mental_maths_questions
+    if "mental_maths_start" not in st.session_state:
+        st.session_state.mental_maths_start = time.perf_counter()
+
+    if "mental_maths_end" not in st.session_state:
+        st.session_state.mental_maths_end = None
+    live_timer()
+    elapsed = (
+    st.session_state.mental_maths_end
+    if st.session_state.mental_maths_end is not None
+    else time.perf_counter() - st.session_state.mental_maths_start
+    )
+
+    minutes = int(elapsed // 60)
+    seconds = int(elapsed % 60)
+
+    st.metric(
+    "⏱️ Time taken",
+    f"{minutes:02d}:{seconds:02d}"
+)
 
     st.markdown(
         """
@@ -229,10 +261,15 @@ def render_mental_maths():
     st.markdown("---")
 
     if st.button(
-        "Check all answers",
-        type="primary",
-        use_container_width=True,
-    ):
+    "Check all answers",
+    type="primary",
+    use_container_width=True,
+):
+
+        if st.session_state.mental_maths_end is None:
+            st.session_state.mental_maths_end = (
+                time.perf_counter() - st.session_state.mental_maths_start
+        )
 
         score = 0
 
@@ -283,6 +320,8 @@ def render_mental_maths():
     ):
 
         st.session_state.mental_maths_questions = generate_mental_maths_set()
+        st.session_state.mental_maths_start = time.perf_counter()
+        st.session_state.mental_maths_end = None
 
         for index in range(10):
             st.session_state.pop(f"mental_answer_{index}", None)
@@ -290,6 +329,165 @@ def render_mental_maths():
         st.session_state.pop("mental_maths_score", None)
 
         st.rerun()
+        
+# ----- ENGLISH LAB: PHRASAL VERBS -----
+
+def render_phrasal_verb():
+
+    st.caption("ENGLISH LAB · VOCABULARY & EXPRESSION")
+
+    if "active_phrasal_verb" not in st.session_state:
+        st.session_state.active_phrasal_verb = get_daily_phrasal_verb()
+
+    entry = st.session_state.active_phrasal_verb
+
+    if not entry:
+        st.warning("No phrasal verbs found.")
+        return
+
+    st.markdown(
+        f"""
+        <div style="
+            background: #E7F3F1;
+            padding: 25px;
+            border-left: 4px solid #087F8C;
+            margin: 15px 0;
+        ">
+            <div style="color: #527477; font-size: 12px;">
+                {entry['cefr_level']} LEVEL ·
+                DIFFICULTY {entry['difficulty_score']}/5
+            </div>
+            <h1 style="
+                font-family: Georgia, serif;
+                color: #18343A;
+                margin-bottom: 5px;
+            ">{entry['phrasal_verb'].title()}</h1>
+            <p style="color: #527477;">
+                {entry['category'].title()}
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.markdown("### Meaning & Usage")
+
+    for index, meaning in enumerate(entry["meanings"], 1):
+
+        st.markdown(f"**Meaning {index}**")
+
+        st.write(meaning["definition"])
+
+        st.markdown(
+            f"> {meaning['example']}"
+        )
+
+        st.caption(
+            f"Register: {meaning['register'].title()} · "
+            f"Context: {meaning['context'].title()}"
+        )
+
+
+    with st.expander("Explore linguistic details"):
+
+        st.write(f"**Base verb:** {entry['base_verb']}")
+
+        st.write(
+            f"**Particles:** {', '.join(entry['particles'])}"
+        )
+
+        st.write(
+            f"**Transitivity:** {entry['transitivity']}"
+        )
+
+        st.write(
+            f"**Separable:** {entry['separability']}"
+        )
+
+    st.markdown("### Your Turn")
+
+    st.write(
+        "Write an original sentence using this phrasal verb. "
+        "Try using it in a professional or academic context."
+    )
+
+    st.text_area(
+        "Construct your sentence",
+        key=f"phrasal_sentence_{entry['id']}",
+        height=110,
+        placeholder="Write your sentence here..."
+    )
+
+    st.markdown("")
+
+    if st.button(
+        "Another Phrasal Verb",
+        use_container_width=True
+    ):
+        st.session_state.active_phrasal_verb = get_daily_phrasal_verb()
+        st.rerun()
+
+# ----- ENGLISH LAB: ADVANCED VOCABULARY -----
+
+def render_vocabulary():
+
+    st.markdown("## Daily Vocabulary")
+    st.caption("THREE WORDS. THREE NEW ADDITIONS TO YOUR VOCABULARY.")
+
+    if "daily_vocabulary" not in st.session_state:
+        st.session_state.daily_vocabulary = get_daily_vocabulary()
+
+    entries = st.session_state.daily_vocabulary
+
+    for entry in entries:
+
+        synonyms = " · ".join(entry.get("synonyms", []))
+
+        html_card = f"""
+        <div style="
+    background-color: #E7F3F1;
+    padding: 13px 18px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    border-left: 3px solid #087F8C;
+    border-radius: 0px;
+">
+        <div style="
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    ">
+            <span style="
+            font-family: Georgia, serif;
+            font-size: 25px;
+            color: #18343A;
+        ">{entry['word'].title()}</span>
+
+        <span style="font-size: 13px; color: #527477;">
+            {synonyms}
+        </span>
+    </div>
+
+        <div style="font-size: 14px; color: #34575A; margin-top: 7px;">
+        {entry['definition']}
+        </div>
+
+        <div style="font-size: 13px; color: #527477; margin-top: 7px; font-style: italic;">
+        {entry['example']}
+    </div>
+</div>
+""" 
+
+        st.html(html_card)
+        st.text_area(
+            "Write your own sentence",
+            key=f"vocabulary_sentence_{entry['id']}",
+            height=75,
+            placeholder=f"Use '{entry['word']}' in your own sentence..."
+        )
+
 
 # ----- Easier ISC / JEE Integral Alternative -----
 
@@ -602,6 +800,15 @@ else:
         elif selected_page == "Mental Maths":
 
             render_mental_maths()
+            
+        #------English Lab: Phrasal Verbs -----
+        
+        elif selected_page == "English Lab":
+
+            render_phrasal_verb()
+            st.markdown("")
+    
+            render_vocabulary()
 
         # ----- OTHER ACTIVITY PLACEHOLDERS -----
 
