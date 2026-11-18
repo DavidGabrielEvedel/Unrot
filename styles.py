@@ -180,6 +180,15 @@ def apply_styles():
         color: var(--marine);
         border-color: var(--teal);
     }
+    
+    /* =========================
+    MENTAL MATHS INPUTS
+    ========================= */
+
+    div[data-testid="stTextInput"] input,
+    div[data-baseweb="input"] > div {
+    border-radius: 0px !important;
+    }
 
 
     /* =========================
@@ -225,3 +234,5 @@ def apply_styles():
 
     </style>
     """, unsafe_allow_html=True)
+    
+    

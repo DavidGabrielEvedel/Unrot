@@ -204,3 +204,58 @@ def get_daily_vocabulary():
     daily_random = random.Random(today)
 
     return daily_random.sample(entries, 3)
+
+# FIGURES OF SPEECH
+
+FIGURES_OF_SPEECH_FILE = BASE_DIR / "data_sources" / "figures_of_speech.jsonl"
+
+
+@st.cache_data
+def load_figures_of_speech():
+    entries = []
+
+    with FIGURES_OF_SPEECH_FILE.open("r", encoding="utf-8") as file:
+        for line in file:
+            if line.strip():
+                entries.append(json.loads(line))
+
+    return entries
+
+
+def get_daily_figure_of_speech():
+    entries = load_figures_of_speech()
+
+    if not entries:
+        return None
+
+    previous_id = st.session_state.get("current_figure_id")
+
+    available = [
+        entry for entry in entries
+        if entry["id"] != previous_id
+    ]
+
+    selected = random.choice(available or entries)
+
+    st.session_state.current_figure_id = selected["id"]
+
+    return selected
+
+# LINUX COMMANDS
+
+LINUX_COMMANDS_FILE = BASE_DIR / "data_sources" / "linuxcommands.json"
+
+
+@st.cache_data
+def load_linux_commands():
+    with LINUX_COMMANDS_FILE.open("r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def get_daily_linux_commands():
+    commands = load_linux_commands()
+
+    if len(commands) <= 5:
+        return commands
+
+    return random.sample(commands, 5)

@@ -12,6 +12,8 @@ from logic import (
     get_random_exam_integral,
     get_daily_phrasal_verb,
     get_daily_vocabulary,
+    get_daily_figure_of_speech,
+    get_daily_linux_commands,
 )
 apply_styles()
 
@@ -172,7 +174,6 @@ def generate_mental_maths_set():
     })
     return questions
 
-
 def render_mental_maths():
 
     st.caption("ABACUS MENTAL CALCULATION")
@@ -181,25 +182,14 @@ def render_mental_maths():
         st.session_state.mental_maths_questions = generate_mental_maths_set()
 
     questions = st.session_state.mental_maths_questions
+
     if "mental_maths_start" not in st.session_state:
         st.session_state.mental_maths_start = time.perf_counter()
 
     if "mental_maths_end" not in st.session_state:
         st.session_state.mental_maths_end = None
+
     live_timer()
-    elapsed = (
-    st.session_state.mental_maths_end
-    if st.session_state.mental_maths_end is not None
-    else time.perf_counter() - st.session_state.mental_maths_start
-    )
-
-    minutes = int(elapsed // 60)
-    seconds = int(elapsed % 60)
-
-    st.metric(
-    "⏱️ Time taken",
-    f"{minutes:02d}:{seconds:02d}"
-)
 
     st.markdown(
         """
@@ -217,9 +207,22 @@ def render_mental_maths():
         unsafe_allow_html=True,
     )
 
-    alphabet_values = {
-        chr(65 + i): i + 1 for i in range(26)
-    }
+    # ----- ANSWER CHECKING ENGINE -----
+
+    def check_answer(user_answer, correct_answer, question_type):
+
+        user_answer = user_answer.strip().replace(" ", "")
+
+        if question_type == "division":
+            return user_answer == correct_answer
+
+        try:
+            return int(user_answer) == int(correct_answer)
+
+        except ValueError:
+            return False
+
+    # ----- DISPLAY QUESTIONS -----
 
     for index, question in enumerate(questions):
 
@@ -244,11 +247,10 @@ def render_mental_maths():
                 st.markdown(f"`{symbol} {letter}`")
 
         else:
-            st.markdown(
-                f"### {question['question']}"
-            )
+            st.markdown(f"### {question['question']}")
 
-        st.text_input(
+        # Answer input
+        user_answer = st.text_input(
             "Your answer",
             key=f"mental_answer_{index}",
             placeholder=(
@@ -258,18 +260,55 @@ def render_mental_maths():
             ),
         )
 
+        # Individual check button
+        if st.button(
+            "Check answer",
+            key=f"check_mental_{index}",
+            use_container_width=True,
+        ):
+
+            is_correct = check_answer(
+                user_answer,
+                question["answer"],
+                question["type"],
+            )
+
+            st.session_state[f"mental_result_{index}"] = {
+                "answer": user_answer.strip().replace(" ", ""),
+                "correct": is_correct,
+            }
+
+        # Display individual result
+        result = st.session_state.get(
+            f"mental_result_{index}"
+        )
+
+        current_answer = user_answer.strip().replace(" ", "")
+
+        if result and result["answer"] == current_answer:
+
+            if result["correct"]:
+                st.success("Correct! Well calculated.")
+
+            else:
+                st.error(
+                    f"Incorrect. Correct answer: {question['answer']}"
+                )
+
+    # ----- CHECK ALL ANSWERS (UNCHANGED FUNCTIONALITY) -----
+
     st.markdown("---")
 
     if st.button(
-    "Check all answers",
-    type="primary",
-    use_container_width=True,
-):
+        "Check all answers",
+        type="primary",
+        use_container_width=True,
+    ):
 
         if st.session_state.mental_maths_end is None:
             st.session_state.mental_maths_end = (
                 time.perf_counter() - st.session_state.mental_maths_start
-        )
+            )
 
         score = 0
 
@@ -277,18 +316,13 @@ def render_mental_maths():
 
             user_answer = st.session_state.get(
                 f"mental_answer_{index}", ""
-            ).strip().replace(" ", "")
+            )
 
-            correct_answer = question["answer"]
-
-            if question["type"] == "division":
-                is_correct = user_answer == correct_answer
-
-            else:
-                try:
-                    is_correct = int(user_answer) == int(correct_answer)
-                except ValueError:
-                    is_correct = False
+            is_correct = check_answer(
+                user_answer,
+                question["answer"],
+                question["type"],
+            )
 
             if is_correct:
                 score += 1
@@ -297,7 +331,7 @@ def render_mental_maths():
             else:
                 st.error(
                     f"Question {index + 1}: Incorrect. "
-                    f"Correct answer: {correct_answer}"
+                    f"Correct answer: {question['answer']}"
                 )
 
         st.session_state.mental_maths_score = score
@@ -314,6 +348,8 @@ def render_mental_maths():
         else:
             st.info("Keep practising. Speed comes with consistency.")
 
+    # ----- GENERATE NEW SET -----
+
     if st.button(
         "Generate Different Set",
         use_container_width=True,
@@ -325,6 +361,7 @@ def render_mental_maths():
 
         for index in range(10):
             st.session_state.pop(f"mental_answer_{index}", None)
+            st.session_state.pop(f"mental_result_{index}", None)
 
         st.session_state.pop("mental_maths_score", None)
 
@@ -488,7 +525,81 @@ def render_vocabulary():
             placeholder=f"Use '{entry['word']}' in your own sentence..."
         )
 
+def render_figures_of_speech():
 
+    st.subheader("Figure of Speech of the Day")
+    st.caption("UNDERSTAND THE DEVICE. RECOGNISE IT. USE IT.")
+
+    if "daily_figure" not in st.session_state:
+        st.session_state.daily_figure = get_daily_figure_of_speech()
+
+    figure = st.session_state.daily_figure
+
+    if not figure:
+        st.warning("No figures of speech found.")
+        return
+
+    html_card = f"""
+    <div style="
+    background-color: #eaf7fa;
+    border: 1px solid #42bfc8;
+    padding: 22px;
+    margin: 12px 0;
+    border-radius: 0px;
+    color: #173b45;
+    ">
+    <div style="font-size:12px; letter-spacing:2px; opacity:0.7;">
+        {figure['category'].upper()}
+    </div>
+
+    <h2 style="margin:10px 0;">
+        {figure['name']}
+    </h2>
+
+    <div style="font-size:12px; opacity:0.7;">
+        DIFFICULTY: {figure['difficulty'].upper()}
+    </div>
+
+    <hr style="opacity:0.25;">
+
+    <p><b>Definition</b><br>
+    {figure['definition']}</p>
+
+    <p><b>Example</b><br>
+    <i>"{figure['example']}"</i></p>
+
+    <p><b>Explanation</b><br>
+    {figure['explanation']}</p>
+
+    <p><b>Effect</b><br>
+    {figure['effect']}</p>
+    </div>
+    """
+
+    st.html(html_card)
+
+    if figure.get("related_terms"):
+        st.markdown(
+            "**Related concepts:** " +
+            " · ".join(figure["related_terms"])
+        )
+
+    st.markdown("### Your Turn")
+
+    st.text_area(
+        "Write your own example using this figure of speech:",
+        key=f"figure_sentence_{figure['id']}",
+        height=100,
+        placeholder="Write your sentence here..."
+    )
+
+    st.button(
+        "Another Figure of Speech →",
+        key="next_figure",
+        on_click=lambda: st.session_state.update({
+            "daily_figure": get_daily_figure_of_speech()
+        })
+    )
 # ----- Easier ISC / JEE Integral Alternative -----
 
 def render_exam_integral():
@@ -544,6 +655,62 @@ def render_exam_integral():
         use_container_width=True
     ):
         st.session_state.exam_integral = get_random_exam_integral()
+        st.rerun()
+        
+def render_linux_commands():
+
+    st.subheader("Linux Commands of the Day")
+    st.caption("FIVE COMMANDS. FIVE NEW TOOLS. EVERY DAY.")
+
+    if "daily_linux_commands" not in st.session_state:
+        st.session_state.daily_linux_commands = get_daily_linux_commands()
+
+    commands = st.session_state.daily_linux_commands
+
+    for index, item in enumerate(commands, start=1):
+
+        html_card = f"""
+    <div style="
+    background-color: #080d0d;
+    border: 1px solid #263b35;
+    padding: 16px 20px;
+    margin-top: 16px;
+    border-radius: 0px;
+    ">
+    <div style="
+        color: #6c8c7e;
+        font-size: 11px;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+    ">
+        COMMAND {index:02d}
+    </div>
+
+    <div style="
+        color: #39ff88;
+        font-family: Consolas, monospace;
+        font-size: 17px;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    ">
+        <span style="color: #8b949e;">$ </span>{item['output']}
+    </div>
+    </div>
+
+    <div style="
+    padding: 10px 2px 18px 2px;
+    color: #425c59;
+    font-size: 14px;
+    ">
+    {item['input']}
+    </div>
+    """
+
+        st.html(html_card)
+
+    if st.button("↻ Generate Another 5 Commands", key="new_linux_commands"):
+
+        st.session_state.daily_linux_commands = get_daily_linux_commands()
         st.rerun()
 
 # ----- Initialise session state -----
@@ -809,6 +976,16 @@ else:
             st.markdown("")
     
             render_vocabulary()
+            st.markdown("")
+            
+            render_figures_of_speech()
+            
+        #----- Linux Commands -----
+        
+        elif selected_page == "Linux":
+
+            render_linux_commands()
+            st.markdown("")
 
         # ----- OTHER ACTIVITY PLACEHOLDERS -----
 
