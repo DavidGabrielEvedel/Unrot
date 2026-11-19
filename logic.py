@@ -2,7 +2,6 @@
 import json
 import random
 import streamlit as st
-from datetime import date
 from datetime import date, datetime
 from pathlib import Path
 
@@ -259,3 +258,125 @@ def get_daily_linux_commands():
         return commands
 
     return random.sample(commands, 5)
+
+# ---------- PHYSICS QUESTION BANK ----------
+
+PHYSICS_QUESTIONS_FILE = BASE_DIR / "data_sources" / "high_school_physics.json"
+
+
+@st.cache_data
+def load_physics_questions():
+    with PHYSICS_QUESTIONS_FILE.open("r", encoding="utf-8") as file:
+        return json.load(file)
+
+
+def get_random_physics_question():
+    questions = load_physics_questions()
+    return random.choice(questions)
+
+# ---------- BHAGAVAD GITA ----------
+
+GITA_FILE = BASE_DIR / "data_sources" / "gita.jsonl"
+
+
+@st.cache_data
+def load_gita_verses():
+    verses = []
+
+    with GITA_FILE.open("r", encoding="utf-8") as file:
+        for line in file:
+            if line.strip():
+                verses.append(json.loads(line))
+
+    return verses
+
+
+def get_daily_gita_verse():
+    verses = load_gita_verses()
+
+    if not verses:
+        return None
+
+    # Same verse throughout the day
+    today = date.today().toordinal()
+    return verses[today % len(verses)]
+
+# LIFE SCIENCES — BIOLOGY & CHEMISTRY MCQ BANK
+
+
+BASE_DIR = Path(__file__).parent
+DATA_DIR = BASE_DIR / "data_sources"
+
+
+@st.cache_data
+def load_mcq_dataset(filename):
+
+    filepath = DATA_DIR / filename
+
+    questions = []
+
+    with open(filepath, "r", encoding="utf-8") as file:
+
+        for line in file:
+
+            if not line.strip():
+                continue
+
+            try:
+                question = json.loads(line)
+
+                options = question.get("options", {})
+                answer = question.get("correct_answer")
+
+                if (
+                    question.get("question")
+                    and isinstance(options, dict)
+                    and all(options.get(k) for k in ["A", "B", "C", "D"])
+                    and answer in ["A", "B", "C", "D"]
+                    and question.get("explanation")
+                ):
+
+                    # Exclude questions requiring unavailable images.
+                    if question.get("question_images"):
+                        continue
+
+                    questions.append(question)
+
+            except json.JSONDecodeError:
+                continue
+
+    return questions
+
+
+def get_daily_mcqs(filename, subject, count=5):
+
+    questions = load_mcq_dataset(filename)
+
+    if len(questions) < count:
+        raise ValueError(
+            f"{subject}: Only {len(questions)} valid questions found. "
+            f"At least {count} are required."
+        )
+
+    today = date.today().isoformat()
+
+    rng = random.Random(f"{today}-{subject}")
+
+    return rng.sample(questions, count)
+
+
+def get_daily_life_sciences_questions():
+
+    biology = get_daily_mcqs(
+        "biology_mcqs_400.jsonl",
+        "biology",
+        5
+    )
+
+    chemistry = get_daily_mcqs(
+        "chemistry_mcqs_700.jsonl",
+        "chemistry",
+        5
+    )
+
+    return biology, chemistry

@@ -14,9 +14,12 @@ from logic import (
     get_daily_vocabulary,
     get_daily_figure_of_speech,
     get_daily_linux_commands,
+    get_random_physics_question,
+    get_daily_gita_verse,
+    get_daily_life_sciences_questions
 )
 apply_styles()
-
+import html
 @st.fragment(run_every="1s")
 def live_timer():
 
@@ -159,7 +162,7 @@ def generate_mental_maths_set():
 
     questions.append({
         "type": "alphabet",
-        "title": "Alphabetical mental maths",
+        "title": "Alphabetical Long Sum",
         "numbers": letters,
         "answer": str(answer),
     })
@@ -168,7 +171,7 @@ def generate_mental_maths_set():
 
     questions.append({
         "type": "sum",
-        "title": "Single-digit addition & subtraction · 30 lines",
+        "title": "Single-digit Long Sum · 30 rows",
         "numbers": numbers,
         "answer": str(answer),
     })
@@ -200,7 +203,7 @@ def render_mental_maths():
             border-left: 3px solid #087F8C;
         ">
             <span style="font-family: Georgia, serif; color: #18343A;">
-                Calculate mentally. No calculator. No written working.
+                Calculate mentally or with an Abacus. No calculator. No written working.
             </span>
         </div>
         """,
@@ -340,13 +343,13 @@ def render_mental_maths():
 
         if score == 10:
             st.balloons()
-            st.success("Perfect calculation!")
+            st.success("Perfect result!")
 
         elif score >= 6:
-            st.success("Good work. Keep practising!")
+            st.success("Good work. Keep practicing!")
 
         else:
-            st.info("Keep practising. Speed comes with consistency.")
+            st.info("Don't give up. Focus on Accuracy. Speed comes with consistency.")
 
     # ----- GENERATE NEW SET -----
 
@@ -438,7 +441,7 @@ def render_phrasal_verb():
         )
 
         st.write(
-            f"**Separable:** {entry['separability']}"
+            f"**Separability:** {entry['separability']}"
         )
 
     st.markdown("### Your Turn")
@@ -528,7 +531,7 @@ def render_vocabulary():
 def render_figures_of_speech():
 
     st.subheader("Figure of Speech of the Day")
-    st.caption("UNDERSTAND THE DEVICE. RECOGNISE IT. USE IT.")
+    st.caption("UNDERSTAND THE LITERARY DEVICE. RECOGNISE IT. USE IT.")
 
     if "daily_figure" not in st.session_state:
         st.session_state.daily_figure = get_daily_figure_of_speech()
@@ -600,6 +603,267 @@ def render_figures_of_speech():
             "daily_figure": get_daily_figure_of_speech()
         })
     )
+    
+#LIFE SCIENCES
+from styles import LIFE_SCIENCES_CSS
+def render_life_sciences():
+
+    st.html(LIFE_SCIENCES_CSS)
+
+    st.html("""
+    <div class="life-header">
+        <div class="life-title">Life Sciences</div>
+        <div class="life-subtitle">
+            BIOLOGY · CHEMISTRY · BIOCHEMISTRY · BIOTECH
+        </div>
+    </div>
+    """)
+
+    st.caption(
+        "10 questions. Life disciplines. Something new everyday."
+        
+    )
+
+    try:
+        biology, chemistry = get_daily_life_sciences_questions()
+
+    except Exception as e:
+        st.error(f"Unable to load question bank: {e}")
+        return
+
+    questions = biology + chemistry
+
+    st.html("""
+    <div class="life-section">
+        01 · BIOLOGY
+    </div>
+    """)
+#QUIZ FORM
+
+    with st.form("life_sciences_quiz"):
+
+        answers = {}
+
+        for i, question in enumerate(questions):
+
+            subject = "BIOLOGY" if i < 5 else "CHEMISTRY"
+
+            number = i + 1
+
+            topic = html.escape(
+                str(question.get("topic") or subject)
+            )
+
+            st.html(f"""
+            <div class="life-question-card">
+
+            <div class="life-question-number">
+            QUESTION {number:02d} · {subject}
+            </div>
+
+            <div class="life-topic">
+            {topic}
+            </div>
+
+            </div>
+            """)
+
+            st.markdown(
+    question["question"],
+    unsafe_allow_html=False
+)
+
+            option_labels = [
+                f"{key}. {question['options'][key]}"
+                for key in ["A", "B", "C", "D"]
+            ]
+
+            answers[question["id"]] = st.radio(
+                "Select your answer:",
+                option_labels,
+                key=f"life_answer_{i}",
+                index=None,
+                label_visibility="collapsed"
+            )
+
+            if i == 4:
+                st.html("""
+                <div class="life-section">
+                    02 · CHEMISTRY
+                </div>
+                """)
+
+        submitted = st.form_submit_button(
+            "SUBMIT QUIZ",
+            use_container_width=True,
+            type="primary"
+        )
+
+   
+    # RESULTS
+
+    if submitted:
+
+        if any(answer is None for answer in answers.values()):
+
+            st.warning(
+                "Please answer all 10 questions before submitting."
+            )
+
+            return
+
+        biology_score = 0
+        chemistry_score = 0
+
+        results = []
+
+        for i, question in enumerate(questions):
+
+            selected = answers[question["id"]]
+
+            selected_letter = selected.split(".", 1)[0]
+
+            correct_letter = question["correct_answer"]
+
+            is_correct = selected_letter == correct_letter
+
+            if is_correct:
+
+                if i < 5:
+                    biology_score += 1
+                else:
+                    chemistry_score += 1
+
+            results.append({
+                "question": question,
+                "selected": selected_letter,
+                "correct": correct_letter,
+                "is_correct": is_correct
+            })
+
+        total_score = biology_score + chemistry_score
+
+        # Save results in session state.
+        st.session_state["life_sciences_results"] = results
+        st.session_state["life_sciences_score"] = total_score
+        st.session_state["life_biology_score"] = biology_score
+        st.session_state["life_chemistry_score"] = chemistry_score
+
+    
+    # DISPLAY SAVED RESULTS
+   
+    if "life_sciences_results" in st.session_state:
+
+        results = st.session_state["life_sciences_results"]
+
+        biology_score = st.session_state["life_biology_score"]
+        chemistry_score = st.session_state["life_chemistry_score"]
+        total_score = st.session_state["life_sciences_score"]
+
+        st.html("""
+<div class="life-section">
+    03 · ANSWER REVIEW
+</div>
+""")
+
+        for i, result in enumerate(results):
+
+            question = result["question"]
+
+            selected = result["selected"]
+            correct = result["correct"]
+
+            correct_answer = html.escape(
+                question["options"][correct]
+        )
+
+            selected_answer = html.escape(
+                question["options"][selected]
+    )
+
+            if result["is_correct"]:
+                title = "✓ CORRECT"
+                result_class = "life-correct"
+            else:
+                title = "✕ INCORRECT"
+                result_class = "life-incorrect"
+
+            card_type = "correct" if result["is_correct"] else "incorrect"
+
+            with st.container(key=f"life_review_{card_type}_{i}"):
+
+                st.markdown(f"**{title}**")
+
+                st.markdown(
+                    f"**Your answer:** {selected}. {question['options'][selected]}"
+                )
+
+                st.markdown(
+                    f"**Correct answer:** {correct}. {question['options'][correct]}"
+                )
+
+                st.markdown("**Explanation:**")
+
+                st.markdown(
+                    question.get("explanation", ""),
+                    unsafe_allow_html=False
+                )
+        # FINAL SCORE
+        st.html(f"""
+        <div class="life-score-card">
+
+            <div class="life-score-label">
+                YOUR DAILY LIFE SCIENCES SCORE
+            </div>
+
+            <div class="life-score-number">
+                {total_score}/10
+            </div>
+
+            <div class="life-score-caption">
+                {"Excellent work!" if total_score >= 8 else
+                 "Good effort! Keep learning." if total_score >= 5 else
+                 "Keep practising. You'll improve."}
+            </div>
+
+        </div>
+        """)
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            st.html(f"""
+            <div class="life-stat">
+                <div class="life-stat-label">BIOLOGY</div>
+                <div class="life-stat-value">
+                    {biology_score}/5
+                </div>
+            </div>
+            """)
+
+        with col2:
+
+            st.html(f"""
+            <div class="life-stat">
+                <div class="life-stat-label">CHEMISTRY</div>
+                <div class="life-stat-value">
+                    {chemistry_score}/5
+                </div>
+            </div>
+            """)
+
+        if st.button("RETAKE TODAY'S QUIZ", use_container_width=True):
+
+            for i in range(10):
+                st.session_state.pop(f"life_answer_{i}", None)
+
+            st.session_state.pop("life_sciences_results", None)
+            st.session_state.pop("life_sciences_score", None)
+            st.session_state.pop("life_biology_score", None)
+            st.session_state.pop("life_chemistry_score", None)
+
+            st.rerun()
 # ----- Easier ISC / JEE Integral Alternative -----
 
 def render_exam_integral():
@@ -656,7 +920,512 @@ def render_exam_integral():
     ):
         st.session_state.exam_integral = get_random_exam_integral()
         st.rerun()
-        
+ 
+ # ---------- PHYSICS ----------
+
+import html
+
+
+import html
+import streamlit as st
+from logic import load_physics_questions
+
+
+def render_physics():
+
+    # ---------- SESSION STATE ----------
+
+    if "physics_question" not in st.session_state:
+        questions = load_physics_questions()
+        st.session_state.physics_question = questions[0]
+
+    question = st.session_state.physics_question
+
+    question_id = question["id"]
+
+    if "physics_checked" not in st.session_state:
+        st.session_state.physics_checked = False
+
+    # ---------- QUESTION CARD ----------
+
+    question_card = f"""
+    <div style="
+        background: #FFFFFF;
+        border: 1px solid #DCE5E5;
+        border-radius: 12px;
+        padding: 22px;
+        margin-bottom: 16px;
+        color: #18343A;
+    ">
+
+        <div style="
+            color: #087F8C;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            margin-bottom: 12px;
+        ">
+            PHYSICS · {html.escape(question["subject"].upper())}
+        </div>
+
+        <div style="
+            font-size: 19px;
+            font-weight: 600;
+            line-height: 1.6;
+        ">
+            {html.escape(question["question"])}
+        </div>
+
+    </div>
+    """
+
+    st.html(question_card)
+
+    # ---------- MCQ OPTIONS ----------
+
+    letters = ["A", "B", "C", "D"]
+
+    options = [
+        f"{letter}. {choice}"
+        for letter, choice in zip(letters, question["choices"])
+    ]
+
+    selected_option = st.radio(
+        "Choose your answer",
+        options,
+        index=None,
+        key=f"physics_option_{question_id}",
+        disabled=st.session_state.physics_checked,
+        label_visibility="collapsed"
+    )
+
+    # ---------- BUTTONS ----------
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        check = st.button(
+            "Check Answer",
+            use_container_width=True,
+            type="secondary",
+            disabled=st.session_state.physics_checked
+        )
+
+    with col2:
+        different = st.button(
+            "Different Question →",
+            use_container_width=True
+        )
+
+    # ---------- CHECK ANSWER ----------
+
+    if check:
+
+        if selected_option is None:
+            st.warning("Select an option first.")
+
+        else:
+            selected_letter = selected_option[0]
+            st.session_state.physics_checked = True
+            st.session_state.physics_user_answer = selected_letter
+            st.rerun()
+
+    # ---------- RESULT ----------
+
+    if st.session_state.physics_checked:
+
+        correct_answer = question["answer"].upper()
+        user_answer = st.session_state.physics_user_answer
+
+        correct_choice = question["choices"][letters.index(correct_answer)]
+
+        if user_answer == correct_answer:
+
+            result_color = "#E8F5EC"
+            border_color = "#79B994"
+            result_title = "Correct!"
+            result_message = "Well done. You got the answer right."
+
+        else:
+
+            result_color = "#FCEBE8"
+            border_color = "#D98C83"
+            result_title = "Incorrect!"
+            result_message = f"The correct answer is {correct_answer}."
+
+        result_card = f"""
+        <div style="
+            background: {result_color};
+            border: 1px solid {border_color};
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 18px;
+            color: #18343A;
+        ">
+
+            <div style="font-size: 18px; font-weight: 700;">
+                {result_title}
+            </div>
+
+            <div style="font-size: 14px; margin-top: 6px;">
+                {result_message}
+            </div>
+
+            <div style="
+                border-top: 1px solid {border_color};
+                margin-top: 14px;
+                padding-top: 14px;
+                font-size: 14px;
+            ">
+                <strong>Correct option:</strong>
+                {correct_answer}. {html.escape(correct_choice)}
+            </div>
+
+            <div style="
+                margin-top: 14px;
+                font-size: 14px;
+                line-height: 1.7;
+            ">
+                <strong>Solution & Explanation</strong><br><br>
+                {html.escape(question["explanation"])}
+            </div>
+
+        </div>
+        """
+
+        st.html(result_card)
+
+    # ---------- DIFFERENT QUESTION ----------
+
+    if different:
+
+        questions = load_physics_questions()
+
+        available = [
+            q for q in questions
+            if q["id"] != question_id
+        ]
+
+        if available:
+            import random
+
+            st.session_state.physics_question = random.choice(available)
+            st.session_state.physics_checked = False
+
+            st.rerun() 
+            
+# ---------- BHAGAVAD GITA ----------
+
+def render_gita():
+
+    verse = get_daily_gita_verse()
+
+    if not verse:
+        st.warning("No Bhagavad Gita data available.")
+        return
+
+    chapter = verse.get("chapter", "?")
+    verse_number = verse.get("verse", "?")
+
+    # ---------- COLLECT TRANSLATION ----------
+
+    translation_sources = [
+        "prabhu", "siva", "purohit", "san",
+        "adi", "gambir", "raman", "abhinav", "sankar"
+    ]
+
+    translation = None
+    translation_author = None
+
+    for source in translation_sources:
+        data = verse.get(source, {})
+
+        if isinstance(data, dict) and data.get("et"):
+            translation = data["et"]
+            translation_author = data.get("author", source)
+            break
+
+    # Hindi fallback
+    if not translation:
+        for source in ["tej", "rams"]:
+            data = verse.get(source, {})
+
+            if isinstance(data, dict) and data.get("ht"):
+                translation = data["ht"]
+                translation_author = data.get("author", source)
+                break
+
+    # ---------- STYLING ----------
+
+    st.html("""
+    <style>
+    .gita-page {
+        color: #233044;
+        font-family: Georgia, 'Times New Roman', serif;
+    }
+
+    .gita-eyebrow {
+        font-family: sans-serif;
+        font-size: 0.72rem;
+        letter-spacing: 3px;
+        font-weight: 700;
+        color: #B17A35;
+        margin-bottom: 10px;
+    }
+
+    .gita-heading {
+        font-size: 2.1rem;
+        font-weight: 600;
+        color: #182A43;
+        margin: 0;
+    }
+
+    .gita-subheading {
+        font-family: sans-serif;
+        font-size: 0.88rem;
+        color: #788394;
+        margin-top: 7px;
+        margin-bottom: 25px;
+    }
+
+    .gita-verse-card {
+    background: linear-gradient(135deg, #073B4C, #087E8B);
+    border-radius: 0px;
+    padding: 35px 30px;
+    text-align: center;
+    margin: 18px 0 26px 0;
+    border-bottom: 3px solid #35C6D0;
+}
+
+    .gita-reference {
+        font-family: sans-serif;
+        font-size: 0.72rem;
+        letter-spacing: 2px;
+        color: Goldenrod;
+        font-weight: 700;
+        margin-bottom: 24px;
+    }
+
+    .gita-sanskrit {
+        font-family: 'Noto Serif Devanagari', Georgia, serif;
+        font-size: 1.55rem;
+        line-height: 2.15;
+        color: #FFF9EF;
+        font-weight: 500;
+        white-space: pre-wrap;
+    }
+
+    .gita-transliteration {
+        font-family: Georgia, serif;
+        font-size: 0.94rem;
+        font-style: italic;
+        line-height: 1.8;
+        color: #D5F3F2;
+        margin-top: 22px;
+    }
+
+    .gita-section-label {
+        font-family: sans-serif;
+        font-size: 0.72rem;
+        letter-spacing: 2px;
+        color: #B17A35;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .gita-section-title {
+        font-family: Georgia, serif;
+        font-size: 1.45rem;
+        color: #1D3049;
+        margin-bottom: 14px;
+    }
+
+    .gita-translation-card {
+        background: #F5F3ED;
+        border: 1px solid #E8E2D6;
+        border-radius: 0px;
+        padding: 24px;
+        margin-bottom: 25px;
+    }
+
+    .gita-translation-text {
+        font-family: Georgia, serif;
+        font-size: 1.08rem;
+        line-height: 1.9;
+        color: #344256;
+    }
+
+    .gita-attribution {
+        font-family: sans-serif;
+        font-size: 0.78rem;
+        color: #8A775F;
+        margin-top: 18px;
+        letter-spacing: 0.3px;
+    }
+
+    .gita-commentary-card {
+        background: #FFFFFF;
+        border: 1px solid #E5E9EF;
+        border-left: 3px solid #C99A55;
+        border-radius: 0px;
+        padding: 24px;
+        margin-top: 12px;
+    }
+
+    .gita-commentary-text {
+        font-family: Georgia, serif;
+        font-size: 1rem;
+        line-height: 2;
+        color: #39485A;
+        white-space: pre-wrap;
+    }
+
+    .gita-reflection-card {
+        background: #F7F0E5;
+        border: 1px solid #EBDCC4;
+        border-radius: 0px;
+        padding: 22px 24px;
+        margin-top: 28px;
+    }
+
+    .gita-reflection-title {
+        font-family: sans-serif;
+        font-size: 0.72rem;
+        letter-spacing: 2px;
+        color: #A16F32;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .gita-reflection-text {
+        font-family: Georgia, serif;
+        font-size: 1.08rem;
+        line-height: 1.7;
+        color: #493B2C;
+    }
+    </style>
+    """)
+
+    # ---------- HEADER ----------
+
+    st.html("""
+    <div class="gita-page">
+        <div class="gita-eyebrow">DAILY WISDOM</div>
+        <div class="gita-heading">भगवद्गीता</div>
+        <div class="gita-subheading">
+            An ancient dialogue on duty, wisdom and the nature of life.
+        </div>
+    </div>
+    """)
+
+    # ---------- VERSE CARD ----------
+
+    slok = html.escape(verse.get("slok", "Sanskrit text unavailable"))
+    transliteration = html.escape(verse.get("transliteration", ""))
+
+    st.html(f"""
+    <div class="gita-verse-card">
+        <div class="gita-reference">
+            BHAGAVAD GITA &nbsp;·&nbsp; CHAPTER {chapter}
+            &nbsp;·&nbsp; VERSE {verse_number}
+        </div>
+        <div class="gita-sanskrit">{slok}</div>
+        <div class="gita-transliteration">{transliteration}</div>
+    </div>
+    """)
+
+    # ---------- TRANSLATION ----------
+
+    st.html("""
+    <div class="gita-page">
+        <div class="gita-section-label">01 · UNDERSTANDING THE VERSE</div>
+        <div class="gita-section-title">Translation</div>
+    </div>
+    """)
+
+    if translation:
+        st.html(f"""
+        <div class="gita-translation-card">
+            <div class="gita-translation-text">
+                {html.escape(translation)}
+            </div>
+            <div class="gita-attribution">
+                TRANSLATION &nbsp;·&nbsp;
+                {html.escape(translation_author)}
+            </div>
+        </div>
+        """)
+    else:
+        st.info("Translation unavailable.")
+
+    # ---------- COMMENTARY ----------
+
+    st.html("""
+<div class="gita-page">
+    <div class="gita-section-label">02 · PERSPECTIVES</div>
+    <div class="gita-section-title">Commentary & Interpretation</div>
+</div>
+""")
+
+    # Automatically retrieve Swami Prabhupada's commentary
+    prabhupada = verse.get("prabhu", {})
+
+    commentary = prabhupada.get("ec", "")
+
+    if commentary and commentary.strip():
+        st.html(f"""
+        <div class="gita-commentary-card">
+        <div class="gita-attribution">
+            A.C. BHAKTIVEDANTA SWAMI PRABHUPADA
+        </div>
+        <div class="gita-commentary-text">
+            {html.escape(commentary.strip())}
+        </div>
+    </div>
+    """)
+    else:
+        st.info("Swami Prabhupada's commentary is unavailable for this verse.")
+    # ---------- REFLECTION ----------
+
+    reflection_prompts = [
+        "What does this verse teach you about your own actions?",
+        "How could you apply this teaching to a situation in your life?",
+        "What assumption or belief does this verse challenge?",
+        "What is one practical lesson you can take from this verse?"
+        "Which part of your life would benefit most from this teaching?",
+        "Are you acting out of wisdom, fear, attachment, or expectation?",
+        "What would change if you genuinely practised this teaching for a week?",
+        "Does this verse challenge something you have always believed?",
+        "What does this verse teach about controlling your reactions?",
+        "How does this teaching redefine success?",
+        "What is within your control, and what must you learn to accept?",
+        "Are your daily actions aligned with the person you wish to become?",
+        "What attachment might be preventing you from seeing things clearly?",
+        "How can you apply this wisdom when facing uncertainty?",
+        "What does this verse suggest about ego and self-awareness?",
+        "When was the last time you acted without expecting something in return?",
+        "What does this verse teach about patience and discipline?",
+        "How might this teaching change the way you treat other people?",
+        "What is one habit you should reconsider after reading this verse?",
+        "Does true knowledge require experience, faith, or reflection?",
+        "What does this verse teach about the difference between temporary and lasting happiness?",
+        "If you had to summarise this verse in one principle, what would it be?",
+        "What is one uncomfortable truth this verse asks you to confront?"
+
+    ]
+
+    prompt_index = (chapter + verse_number) % len(reflection_prompts)
+
+    st.html(f"""
+    <div class="gita-reflection-card">
+        <div class="gita-reflection-title">
+            03 · CONTEMPLATE
+        </div>
+        <div class="gita-reflection-text">
+            {html.escape(reflection_prompts[prompt_index])}
+        </div>
+    </div>
+    """)
 def render_linux_commands():
 
     st.subheader("Linux Commands of the Day")
@@ -986,6 +1755,18 @@ else:
 
             render_linux_commands()
             st.markdown("")
+         
+        #------Physics---------   
+        elif selected_page == "Physics":
+            render_physics()
+            st.markdown("")
+        
+        #----- Bhagavad Gita -----    
+        elif selected_page == "Gita":
+            render_gita()
+            
+        elif selected_page == "Life Sciences":
+            render_life_sciences()
 
         # ----- OTHER ACTIVITY PLACEHOLDERS -----
 
