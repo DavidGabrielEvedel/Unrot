@@ -5,7 +5,7 @@ def apply_styles():
 
     st.set_page_config(
         page_title="UNROT | Learn Something Daily",
-        page_icon="🌊",
+        page_icon="🪷",
         layout="wide",
         initial_sidebar_state="expanded",
     )
@@ -232,6 +232,104 @@ def apply_styles():
         visibility: hidden;
     }
 
+   /*---UNROT DSA-------*/
+
+    .dsa-header {
+    background: linear-gradient(120deg, #EAF8F7, #DDF3EF);
+    border-left: 4px solid #087E8B;
+    padding: 22px 25px;
+    margin-bottom: 25px;
+}
+
+    .dsa-eyebrow {
+    color: #438F83;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+}
+
+    .dsa-title {
+    color: #073B4C;
+    font-size: 27px;
+    font-weight: 700;
+}
+
+    .dsa-subtitle {
+    color: #438F83;
+    font-size: 13px;
+    margin-top: 7px;
+}
+
+    .dsa-problem-header {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    margin-bottom: 8px;
+}
+
+    .dsa-problem-title {
+    color: #073B4C;
+    font-size: 23px;
+    font-weight: 700;
+}
+
+    .dsa-difficulty {
+    background: #DDF3E8;
+    color: #287A59;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 0px;}
+    
+    /* LeetCode / NeetCode buttons */
+    .stButton button[kind="secondary"] {
+    color: white !important;
+}
+    
+
+/* Default state */
+    div[data-testid="stExpander"] details > summary {
+    background-color: #FFFFFF;
+    border: 1px solid #DCE5E5;
+    border-radius: 0px;
+    padding: 10px 15px;
+    color: #18343A;
+    transition: background-color 0.2s ease;
+}
+
+/* Hover state */
+    div[data-testid="stExpander"] details > summary:hover {
+    background-color: #EAF8F7;
+    color: #087F8C;
+    border-color: #A8DCD5;
+}
+
+/* Expanded / clicked state */
+    div[data-testid="stExpander"] details[open] > summary {
+    background-color: #EAF8F7;
+    color: #073B4C;
+    border-color: #A8DCD5;
+    border-left: 4px solid #087E8B;
+}
+
+/* Focus state — remove dark default outline */
+    div[data-testid="stExpander"] details > summary:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Expanded content */
+    div[data-testid="stExpander"] details > div {
+    background-color: #FFFFFF;
+    border: 1px solid #DCE5E5;
+    border-top: none;
+    padding: 12px 16px;
+}
+
+
     </style>
     """, unsafe_allow_html=True)
     
@@ -417,4 +515,154 @@ LIFE_SCIENCES_CSS = """
 }
 </style>
 """
-    
+WILDCARD_CSS = """
+/* Question boxes */
+[class*="st-key-wildcard_q_"] {
+    padding: 15px 19px 10px 19px;
+    margin: 9px 0 13px 0;
+    border: 1px solid #C8D8DF;
+    border-radius: 0px;
+    color: #172B35;
+}
+
+[class*="st-key-wildcard_q_0"] {
+    background: #EAF2F7;
+    border-color: #C1D5E2;
+}
+
+[class*="st-key-wildcard_q_1"] {
+    background: #F4F0E8;
+    border-color: #DDD1BC;
+}
+
+[class*="st-key-wildcard_q_2"] {
+    background: #F0EEF6;
+    border-color: #D4CEE2;
+}
+
+[class*="st-key-wildcard_q_3"] {
+    background: #EAF1F3;
+    border-color: #C8D8DC;
+}
+
+[class*="st-key-wildcard_q_4"] {
+    background: #F5F0EA;
+    border-color: #DED2C5;
+}
+
+/* Question typography */
+[class*="st-key-wildcard_q_"] p {
+    font-family: "Georgia Pro", Georgia, serif;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #172B35;
+    margin-bottom: 5px;
+}
+
+.wildcard-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: "Times New Roman", serif;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #426477;
+    margin-bottom: 8px;
+}
+
+.wildcard-question {
+    font-family: "Times New Roman", serif;
+    font-size: 17px;
+    font-weight: 600;
+    color: #172B35;
+    line-height: 1.35;
+    margin-bottom: 8px;
+}
+
+/* Radio options */
+[class*="st-key-wildcard_q_"] [data-testid="stRadio"] label {
+    font-family: "Georgia Pro", Georgia, serif;
+    font-size: 13px;
+    color: #172B35;
+}
+
+[class*="st-key-wildcard_q_"] [data-testid="stRadio"] {
+    gap: 3px;
+}
+
+/* Review cards */
+[class*="st-key-wildcard_review_correct_"],
+[class*="st-key-wildcard_review_incorrect_"] {
+    padding: 12px 17px;
+    margin: 8px 0 14px 0;
+    border-radius: 0px;
+    font-family: "Georgia Pro", Georgia, serif;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+[class*="st-key-wildcard_review_correct_"] {
+    background: #E5F6EC;
+    border: 1px solid #65B98A;
+    border-left: 4px solid #27965B;
+}
+
+[class*="st-key-wildcard_review_incorrect_"] {
+    background: #FFF0EB;
+    border: 1px solid #E8A18E;
+    border-left: 4px solid #D76B52;
+}
+
+[class*="st-key-wildcard_review_"] p {
+    font-family: "Georgia Pro", Georgia, serif;
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 5px;
+    color: #172B35;
+}
+
+.wildcard-review-label {
+    font-family: "Times New Roman", serif;
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 7px;
+    color: #172B35;
+}
+
+/* Headings */
+.wildcard-heading {
+    font-family: "Times New Roman", serif;
+    font-size: 27px;
+    font-weight: 600;
+    color: #173D50;
+    margin-bottom: 2px;
+}
+
+.wildcard-subtitle {
+    font-family: "Georgia Pro", Georgia, serif;
+    font-size: 15px;
+    font-style: italic;
+    letter-spacing: 0.15px;
+    line-height: 1.5;
+    color: #526C78;
+    margin-top: 5px;
+    margin-bottom: 18px;
+}
+
+.st-key-wildcard_submit button,
+button[kind="primaryFormSubmit"] {
+    background-color: #E89A52 !important;
+    color: #FFFFFF !important;
+    border: 1px solid #D88940 !important;
+    border-radius: 0px !important;
+    font-family: "Georgia Pro", Georgia, serif !important;
+    font-weight: 700 !important;
+}
+
+.st-key-wildcard_submit button:hover,
+button[kind="primaryFormSubmit"]:hover {
+    background-color: #D98236 !important;
+    border-color: #D98236 !important;
+}
+"""   

@@ -72,6 +72,14 @@
     "duration": "3 min",
     "page": "Gita"
   },
+  "gate": {
+    "page": "CS Prep",
+    "title": "CS Tech Prep",
+    "category": "COMPUTER SCIENCE",
+    "icon": "🎓",
+    "description": "Master Computer Science with practice.",
+    "duration": "15 min"
+  },
   "skill": {
     "title": "Skill of the Week",
     "icon": "↗",
@@ -79,5 +87,13 @@
     "description": "Build one practical technical, communication, or life skill.",
     "duration": "10 min",
     "page": "Weekly Skill"
+  },
+  "todo": {
+    "page": "To-do List",
+    "title": "Daily To-do List",
+    "category": "PRODUCTIVITY",
+    "icon": "☑",
+    "description": "Organise your priorities, track daily tasks, and stay consistent with your goals.",
+    "duration": "5 min"
   }
 }

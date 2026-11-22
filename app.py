@@ -2,7 +2,7 @@ import random
 import time
 import streamlit as st
 import sympy as sp
-from styles import apply_styles
+from styles import apply_styles, WILDCARD_CSS
 from logic import (
     load_activities,
     get_daily_greeting,
@@ -16,7 +16,9 @@ from logic import (
     get_daily_linux_commands,
     get_random_physics_question,
     get_daily_gita_verse,
-    get_daily_life_sciences_questions
+    get_daily_life_sciences_questions,
+    load_wildcard_questions, 
+    get_daily_wildcard_questions
 )
 apply_styles()
 import html
@@ -603,7 +605,186 @@ def render_figures_of_speech():
             "daily_figure": get_daily_figure_of_speech()
         })
     )
-    
+
+def render_wildcard():
+
+    st.markdown(
+    f"<style>{WILDCARD_CSS}</style>",
+    unsafe_allow_html=True
+)
+
+    # Load dataset
+    if "wildcard_all_questions" not in st.session_state:
+        st.session_state.wildcard_all_questions = load_wildcard_questions()
+
+    all_questions = st.session_state.wildcard_all_questions
+
+    if len(all_questions) < 5:
+        st.error("Not enough valid questions in wildcard.jsonl.")
+        return
+
+    # Initialise today's question set
+    if "wildcard_questions" not in st.session_state:
+        st.session_state.wildcard_questions = get_daily_wildcard_questions(
+            all_questions, 5
+        )
+        st.session_state.wildcard_version = 0
+        st.session_state.wildcard_submitted = False
+
+    questions = st.session_state.wildcard_questions
+    version = st.session_state.wildcard_version
+
+    # QUIZ
+    if not st.session_state.wildcard_submitted:
+
+        with st.form(key=f"wildcard_form_{version}"):
+
+            for i, q in enumerate(questions):
+
+                with st.container(key=f"wildcard_q_{i}"):
+
+                    st.html(f"""
+                        <div class="wildcard-meta">
+                            <span>{html.escape(q['cat'])}</span>
+                            <span>{html.escape(q['level'])}</span>
+                        </div>
+                        <div class="wildcard-question">
+                            {i + 1}. {html.escape(q['q'])}
+                        </div>
+                    """)
+
+                    st.radio(
+                        "Choose your answer",
+                        q["opts"],
+                        index=None,
+                        key=f"wildcard_answer_{version}_{i}",
+                        label_visibility="collapsed"
+                    )
+
+            submitted = st.form_submit_button(
+                "Check My Answers",
+                use_container_width=True,
+                type="primary"
+            )
+
+        if submitted:
+
+            answers = [
+                st.session_state.get(f"wildcard_answer_{version}_{i}")
+                for i in range(5)
+            ]
+
+            st.session_state.wildcard_answers = answers
+            st.session_state.wildcard_submitted = True
+            st.rerun()
+
+    # RESULTS AND EXPLANATIONS
+    if st.session_state.wildcard_submitted:
+
+        answers = st.session_state.wildcard_answers
+
+        score = sum(
+            1 for q, a in zip(questions, answers)
+            if a is not None and str(a).strip().casefold() == str(q["ans"]).strip().casefold()
+        )
+
+        st.markdown(
+            f"""
+            <div class="wildcard-heading">Your Results: {score}/5</div>
+            <div class="wildcard-subtitle">
+                Review your answers and explore the explanations below.
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        for i, (q, selected) in enumerate(zip(questions, answers)):
+
+            correct = (
+                selected is not None
+                and str(selected).strip().casefold() == str(q["ans"]).strip().casefold()
+            )
+
+            status = "CORRECT" if correct else "INCORRECT"
+            container_key = (
+                f"wildcard_review_correct_{i}"
+                if correct
+                else f"wildcard_review_incorrect_{i}"
+            )
+
+            with st.container(key=container_key):
+
+                st.html(f"""
+                    <div class="wildcard-review-label">
+                        QUESTION {i + 1} — {status}
+                    </div>
+                """)
+
+                st.markdown(f"**{q['q']}**")
+
+                st.markdown(
+                    f"**Your answer:** {selected if selected is not None else 'Not answered'}"
+                )
+
+                if not correct:
+                    st.markdown(f"**Correct answer:** {q['ans']}")
+
+                st.markdown(f"**Explanation:** {q['why']}")
+
+                if q.get("extra"):
+                    st.markdown(f"**Did you know?** {q['extra']}")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button(
+                "↻ Reattempt",
+                key="wildcard_reattempt",
+                use_container_width=True
+            ):
+                # Clear previous answers
+                st.session_state.wildcard_answers = []
+
+                # Reset submission status
+                st.session_state.wildcard_submitted = False
+
+                # Increment version to create fresh radio widgets
+                st.session_state.wildcard_version += 1
+
+                st.rerun()
+
+        with col2:
+            if st.button(
+                "Generate a Different Set",
+                key="wildcard_new_set",
+                use_container_width=True
+            ):
+                previous_ids = {q["id"] for q in questions}
+
+                available = [
+                    q for q in all_questions
+                    if q["id"] not in previous_ids
+                ]
+
+                if len(available) < 5:
+                    available = all_questions
+
+                new_questions = random.sample(available, 5)
+
+                attempts = 0
+                while (
+                    {q["id"] for q in new_questions} == previous_ids
+                    and attempts < 20
+                ):
+                    new_questions = random.sample(available, 5)
+                    attempts += 1
+
+                st.session_state.wildcard_questions = new_questions
+                st.session_state.wildcard_version += 1
+                st.session_state.wildcard_answers = []
+                st.session_state.wildcard_submitted = False
+
+                st.rerun()
 #LIFE SCIENCES
 from styles import LIFE_SCIENCES_CSS
 def render_life_sciences():
@@ -1114,6 +1295,214 @@ def render_physics():
 
             st.rerun() 
             
+import json
+import streamlit as st
+from pathlib import Path
+
+
+# ==========================================
+# DSA DATA LOADER
+# ==========================================
+
+@st.cache_data
+def load_neetcode_data():
+
+    filepath = Path(__file__).parent / "data_sources" / "neetcode_150.jsonl"
+
+    problems = []
+
+    with open(filepath, "r", encoding="utf-8") as file:
+        for line in file:
+            if line.strip():
+                problems.append(json.loads(line))
+
+    return problems
+
+
+# ==========================================
+# DSA PAGE
+# ==========================================
+
+def render_dsa():
+
+    problems = load_neetcode_data()
+
+    st.markdown("""
+    <div class="dsa-header">
+        <div class="dsa-eyebrow">UNROT · DAILY PRACTICE</div>
+        <div class="dsa-title">Data Structures & Algorithms</div>
+        <div class="dsa-subtitle">
+            Understand the pattern. Learn the approach. Master the problem.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # CATEGORY SELECTION
+
+    categories = list(dict.fromkeys(
+        p["category"] for p in problems
+    ))
+
+    category = st.selectbox(
+        "SELECT A CATEGORY",
+        categories,
+        key="dsa_category"
+    )
+
+    category_problems = [
+        p for p in problems
+        if p["category"] == category
+    ]
+
+    st.caption(
+        f"{len(category_problems)} problems · {category}"
+    )
+
+    # PROBLEM SELECTION
+
+    problem_names = [
+        p["problem_name"] for p in category_problems
+    ]
+
+    selected_name = st.selectbox(
+        "SELECT A PROBLEM",
+        problem_names,
+        key="dsa_problem"
+    )
+
+    problem = next(
+        p for p in category_problems
+        if p["problem_name"] == selected_name
+    )
+
+    st.divider()
+
+    # PROBLEM HEADER
+
+    st.markdown(f"""
+    <div class="dsa-problem-header">
+        <span class="dsa-problem-title">
+            {problem["problem_name"]}
+        </span>
+        <span class="dsa-difficulty">
+            {problem["difficulty"]}
+        </span>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.caption(
+        f'{problem["category"]}  ·  {problem["pattern"]}'
+    )
+
+    # PROBLEM STATEMENT
+
+    st.markdown("### Problem")
+
+    st.markdown(problem["question"])
+
+    # EXAMPLES
+
+    st.markdown("### Examples")
+
+    for i, example in enumerate(problem["examples"], 1):
+
+        with st.container(border=True):
+
+            st.markdown(f"**Example {i}**")
+
+            st.code(
+                f'Input: {example["input"]}\n'
+                f'Output: {example["output"]}',
+                language="text"
+            )
+
+            if example.get("explanation"):
+                st.caption(example["explanation"])
+
+    # CONSTRAINTS
+
+    with st.expander("Constraints"):
+
+        for constraint in problem["constraints"]:
+            st.markdown(f"- {constraint}")
+
+    st.divider()
+
+    # LEARNING MATERIAL
+
+    st.markdown("### Learn the Problem")
+
+    with st.expander("01 · Theory & Key Concepts"):
+
+        st.markdown(problem["theory"])
+
+    with st.expander("02 · Approach & Algorithm"):
+
+        st.markdown(problem["approach"])
+
+        st.markdown("**Algorithm**")
+
+        for step in problem["algorithm"]:
+            st.markdown(f"- {step}")
+
+    with st.expander("03 · Step-by-Step Walkthrough"):
+
+        st.markdown(problem["solution"])
+
+    with st.expander("04 · C++17 Solution"):
+
+        st.code(
+            problem["cpp_code"],
+            language="cpp"
+        )
+
+    with st.expander("05 · Code Explanation"):
+
+        st.markdown(problem["code_explanation"])
+
+    with st.expander("06 · Complexity Analysis"):
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric(
+                "Time Complexity",
+                problem["time_complexity"]
+            )
+
+        with col2:
+            st.metric(
+                "Space Complexity",
+                problem["space_complexity"]
+            )
+
+        st.markdown(problem["complexity_explanation"])
+
+    with st.expander("07 · Edge Cases"):
+
+        for edge in problem["edge_cases"]:
+            st.markdown(f"- {edge}")
+
+    # EXTERNAL LINKS
+
+    st.markdown("### Practice Further")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.link_button(
+            "LeetCode ↗",
+            problem["leetcode_link"],
+            use_container_width=True
+        )
+
+    with col2:
+        st.link_button(
+            "NeetCode ↗",
+            problem["neetcode_link"],
+            use_container_width=True
+        )
+            
 # ---------- BHAGAVAD GITA ----------
 
 def render_gita():
@@ -1499,7 +1888,7 @@ activities = load_activities()
 
 # ----- Sidebar navigation -----
 with st.sidebar:
-    st.markdown("## 🌊 UNROT")
+    st.markdown("## 🪷 UNROT")
     st.caption("Your daily antidote to passive scrolling.")
     st.divider()
 
@@ -1760,6 +2149,8 @@ else:
         elif selected_page == "Physics":
             render_physics()
             st.markdown("")
+        elif selected_page == "DSA":
+            render_dsa()
         
         #----- Bhagavad Gita -----    
         elif selected_page == "Gita":
@@ -1767,7 +2158,8 @@ else:
             
         elif selected_page == "Life Sciences":
             render_life_sciences()
-
+        elif selected_page == "Wildcard":
+            render_wildcard()
         # ----- OTHER ACTIVITY PLACEHOLDERS -----
 
         else:

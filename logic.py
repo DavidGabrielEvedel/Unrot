@@ -380,3 +380,33 @@ def get_daily_life_sciences_questions():
     )
 
     return biology, chemistry
+
+def load_wildcard_questions():
+    path = Path(__file__).resolve().parent / "data_sources" / "wildcard.jsonl"
+
+    questions = []
+
+    with open(path, "r", encoding="utf-8") as file:
+        for line in file:
+            if not line.strip():
+                continue
+
+            try:
+                q = json.loads(line)
+
+                if all(k in q for k in ("id", "cat", "q", "opts", "ans", "why", "extra", "level")):
+                    if isinstance(q["opts"], list) and len(q["opts"]) >= 2:
+                        questions.append(q)
+
+            except json.JSONDecodeError:
+                continue
+
+    return questions
+
+
+def get_daily_wildcard_questions(questions, count=5):
+    if len(questions) < count:
+        raise ValueError(f"Wildcard needs at least {count} valid questions.")
+
+    seed = int(date.today().strftime("%Y%m%d"))
+    return random.Random(seed).sample(questions, count)
