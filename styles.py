@@ -666,3 +666,731 @@ button[kind="primaryFormSubmit"]:hover {
     border-color: #D98236 !important;
 }
 """   
+
+CS_PREP_CSS = """
+/* CS Prep — Question boxes */
+[class*="st-key-cs_q_"] {
+    padding: 15px 19px 10px 19px;
+    margin: 9px 0 13px 0;
+    background: #F6F3EC;
+    border: 1px solid #DED8CB;
+    border-left: 3px solid #527487;
+    border-radius: 0px;
+    color: #172B35;
+}
+
+/* Question typography */
+[class*="st-key-cs_q_"] p {
+    font-family: "Georgia Pro", Georgia, serif;
+    font-size: 14px;
+    line-height: 1.45;
+    color: #172B35;
+    margin-bottom: 5px;
+}
+/* CS Prep typography */
+.cs-eyebrow {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: #527487;
+    margin-bottom: 8px;
+}
+
+.cs-daily-label {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: #527487;
+    border-top: 1px solid #C8D8DF;
+    border-bottom: 1px solid #C8D8DF;
+    padding: 10px 0;
+    margin: 18px 0;
+}
+
+.cs-meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    color: #527487;
+    margin-bottom: 7px;
+}
+
+.cs-topic {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    color: #98734E;
+    margin-bottom: 8px;
+}
+
+.cs-question {
+    font-family: "Times New Roman", serif;
+    font-size: 17px;
+    font-weight: bold;
+    line-height: 1.4;
+    color: #172B35;
+    margin-bottom: 10px;
+}
+
+[class*="st-key-cs_q_"] label {
+    font-family: "Georgia Pro", Georgia, serif;
+    font-size: 13px;
+    color: #172B35;
+}
+
+.cs-set-note {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.7px;
+    color: #527487;
+    text-align: center;
+    padding: 12px 0;
+}
+/* Results header */
+.cs-results-eyebrow,
+.cs-review-intro {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    color: #527487;
+    margin-bottom: 8px;
+}
+
+.cs-score {
+    font-family: "Times New Roman", serif;
+    font-size: 48px;
+    font-weight: bold;
+    color: #173D50;
+    line-height: 1.1;
+}
+
+.cs-score span {
+    font-size: 25px;
+    color: #82949B;
+}
+
+.cs-results-subtitle {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #527487;
+    margin-bottom: 15px;
+}
+
+.cs-performance-line {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: #526C78;
+    margin-bottom: 12px;
+}
+
+.cs-review-intro {
+    margin-top: 24px;
+    margin-bottom: 12px;
+}
+
+.cs-review-meta {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    color: #71858E;
+    margin-bottom: 12px;
+}
+
+.cs-review-section {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: #527487;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.cs-review-question {
+    font-family: "Times New Roman", serif;
+    font-size: 17px;
+    font-weight: bold;
+    line-height: 1.45;
+    color: #172B35;
+    margin-bottom: 12px;
+}
+
+.cs-review-answer {
+    font-family: "Georgia Pro", Georgia, serif;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #263E49;
+}
+
+/* Unattempted cards */
+[class*="st-key-cs_review_unattempted_"] {
+    padding: 17px 20px;
+    margin: 10px 0 16px;
+    background: #EEF1F3;
+    border: 1px solid #CDD7DC;
+    border-left: 4px solid #718B99;
+    border-radius: 0px;
+}
+"""
+
+TODO_CSS="""
+
+.todo-eyebrow {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #6F9EAA;
+    margin-bottom: 5px;
+}
+
+.todo-heading {
+    font-family: Georgia, serif;
+    font-size: 43px;
+    color: #173D50;
+    line-height: 1.1;
+    margin: 0;
+}
+
+.todo-subtitle {
+    font-family: Georgia, serif;
+    font-size: 15px;
+    font-style: italic;
+    color: #788C91;
+    margin-top: 5px;
+    margin-bottom: 8px;
+}
+
+.todo-task-meta {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 1.2px;
+    color: #6F9EAA;
+    margin: 5px 0;
+}
+
+.todo-label {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    font-weight: bold;
+    color: #173D50;
+    margin: 5px 0 8px 0;
+}
+
+.todo-task-title {
+    font-family: Georgia, serif;
+    font-size: 17px;
+    color: #173D50;
+    line-height: 1.4;
+    margin: 3px 0;
+}
+
+.todo-completed {
+    font-family: Georgia, serif;
+    font-size: 15px;
+    color: #91A5A5;
+    text-decoration: line-through;
+}
+
+/* Compact page spacing */
+
+.stMainBlockContainer {
+    padding-top: 2rem !important;
+}
+
+.stMainBlockContainer [data-testid="stVerticalBlock"] {
+    gap: 0.55rem;
+}
+
+.stMainBlockContainer [data-testid="stElementContainer"] {
+    margin-bottom: 0 !important;
+}
+
+/* Dividers */
+
+.stMainBlockContainer hr {
+    border-color: #DCE5E1 !important;
+    margin: 0.8rem 0 !important;
+}
+
+/* Buttons */
+
+.stMainBlockContainer .stButton > button,
+.stMainBlockContainer button[kind="primaryFormSubmit"] {
+    border-radius: 0px !important;
+    border: 1px solid #173D50 !important;
+    background: #173D50 !important;
+    color: #F8F7F2 !important;
+    font-family: Consolas, monospace !important;
+    font-size: 11px !important;
+    letter-spacing: 1px !important;
+    font-weight: 600 !important;
+    min-height: 36px !important;
+    padding: 5px 14px !important;
+    box-shadow: none !important;
+    transition: 0.2s ease;
+}
+
+.stMainBlockContainer .stButton > button:hover,
+.stMainBlockContainer button[kind="primaryFormSubmit"]:hover {
+    background: #6F9EAA !important;
+    border-color: #6F9EAA !important;
+    color: white !important;
+}
+
+/* Delete buttons */
+
+.stMainBlockContainer [class*="st-key-todo_delete_"] button {
+    background: transparent !important;
+    color: #B56F55 !important;
+    border: 1px solid #D9B8A8 !important;
+    font-size: 17px !important;
+}
+
+/* Input fields */
+
+.stMainBlockContainer .stTextInput input,
+.stMainBlockContainer .stDateInput input {
+    border-radius: 0 !important;
+    border: 1px solid #C9D8D5 !important;
+    background: #FFFFFF !important;
+    color: #173D50 !important;
+    font-family: Georgia, serif !important;
+    min-height: 38px !important;
+}
+
+.stMainBlockContainer .stTextInput input:focus,
+.stMainBlockContainer .stDateInput input:focus {
+    border-color: #6F9EAA !important;
+    box-shadow: 0 0 0 1px #6F9EAA !important;
+}
+
+/* Dropdowns */
+
+.stMainBlockContainer [data-baseweb="select"] > div {
+    border-radius: 0 !important;
+    border-color: #C9D8D5 !important;
+    background: #FFFFFF !important;
+}
+
+/* Checkboxes */
+
+.stMainBlockContainer [data-testid="stCheckbox"] label {
+    color: #527487 !important;
+    font-family: Consolas, monospace !important;
+    font-size: 11px !important;
+}
+
+/* Task rows */
+
+.stMainBlockContainer [class*="st-key-todo_card_"] {
+    background: #F0F3EF;
+    border-left: 3px solid #6F9EAA;
+    padding: 10px 14px;
+    margin: 3px 0;
+}
+
+/* Expanders */
+
+.stMainBlockContainer [data-testid="stExpander"] {
+    border: 1px solid #DCE5E1 !important;
+    border-radius: 0 !important;
+    background: #F0F3EF !important;
+}
+
+.stMainBlockContainer [data-testid="stExpander"] summary {
+    font-family: Consolas, monospace;
+    color: #173D50 !important;
+    font-size: 11px;
+    letter-spacing: 1px;
+}
+
+/* Heatmap */
+
+.stMainBlockContainer [data-testid="stPlotlyChart"] {
+    background: #F8F7F2;
+}
+/* ADD TASK + CREATE SECTION */
+div[data-testid="stFormSubmitButton"] button {
+    background: #173D50 !important;
+    border: 1px solid #173D50 !important;
+    border-radius: 0px !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+div[data-testid="stFormSubmitButton"] button *,
+div[data-testid="stFormSubmitButton"] button p {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+div[data-testid="stFormSubmitButton"] button:hover {
+    background: #6F9EAA !important;
+    border-color: #6F9EAA !important;
+}
+.stMainBlockContainer .stButton > button {
+    background: #173D50 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    border: 1px solid #173D50 !important;
+}
+
+.stMainBlockContainer .stButton > button:hover {
+    background: #6F9EAA !important;
+    color: #FFFFFF !important;
+}
+"""
+KALAS_CSS = """
+<style>
+
+.stApp {
+    background: #F6F5EF;
+    color: #243C40;
+}
+
+.stMainBlockContainer {
+    max-width: 1300px;
+    padding-top: 1.5rem;
+    padding-bottom: 4rem;
+}
+
+h1, h2, h3, h4 {
+    font-family: Georgia, serif !important;
+    color: #164E59 !important;
+    font-weight: 400 !important;
+}
+
+p, label {
+    color: #243C40;
+}
+
+/* BUTTONS */
+
+div[data-testid="stButton"] > button,
+div[data-testid="stFormSubmitButton"] button {
+    background: #164E59 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    border: 1px solid #164E59 !important;
+    border-radius: 0px !important;
+    padding: 0.55rem 1.1rem !important;
+    font-weight: 500 !important;
+}
+
+div[data-testid="stButton"] > button *,
+div[data-testid="stFormSubmitButton"] button * {
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+}
+
+div[data-testid="stButton"] > button:hover,
+div[data-testid="stFormSubmitButton"] button:hover {
+    background: #39AFA6 !important;
+    border-color: #39AFA6 !important;
+}
+
+/* INPUTS */
+
+input, textarea,
+div[data-baseweb="select"] > div {
+    border-radius: 0px !important;
+    border-color: #B7D4CE !important;
+    background: #FFFFFF !important;
+}
+
+/* GENERAL */
+
+hr {
+    border-color: #D5E3DC !important;
+}
+
+div[data-testid="stExpander"] {
+    border: 1px solid #D5E3DC !important;
+    border-radius: 0px !important;
+    background: #FFFFFF !important;
+}
+
+/* HEADER */
+
+.kala-eyebrow {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #399B94;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+}
+
+.kala-hero {
+    background: #E4F1EC;
+    border: 1px solid #C8DED5;
+    border-left: 5px solid #39AFA6;
+    padding: 42px;
+    margin: 12px 0 30px 0;
+}
+
+.kala-hero-number {
+    font-family: Georgia, serif;
+    font-size: 76px;
+    color: #80BDB4;
+    text-align: left;
+    line-height: 1;
+    margin-bottom: 18px;
+}
+
+.kala-hero h1 {
+    font-size: 46px;
+    color: #164E59;
+    margin: 8px 0;
+}
+
+.kala-hero p {
+    font-size: 15px;
+    line-height: 1.8;
+    color: #58716F;
+    max-width: 760px;
+}
+
+/* SECTION HEADINGS */
+
+.kala-section-title {
+    font-family: Georgia, serif;
+    font-size: 29px;
+    color: #164E59;
+    margin: 30px 0 5px 0;
+}
+
+.kala-section-subtitle {
+    font-size: 13px;
+    color: #788B89;
+    margin-bottom: 20px;
+}
+
+/* STATS */
+
+.kala-stat {
+    background: #FFFFFF;
+    border-top: 3px solid #39AFA6;
+    padding: 18px;
+    border-bottom: 1px solid #D8E5DE;
+}
+
+.kala-stat-number {
+    font-family: Georgia, serif;
+    font-size: 32px;
+    color: #164E59;
+}
+
+.kala-stat-label {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #788B89;
+    text-transform: uppercase;
+}
+
+/* FEATURED SKILL */
+
+.kala-feature {
+    background: #164E59;
+    padding: 36px;
+    margin: 20px 0 28px 0;
+    border-left: 6px solid #39AFA6;
+}
+
+.kala-feature .feature-label {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: #A8DCD5;
+    text-transform: uppercase;
+}
+
+.kala-feature h1 {
+    color: #FFFFFF !important;
+    font-size: 42px;
+    margin: 15px 0;
+}
+
+.kala-feature p {
+    color: #E0EFEB;
+    line-height: 1.85;
+    font-size: 15px;
+}
+
+.kala-feature .feature-meta {
+    color: #A8DCD5;
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-top: 18px;
+}
+
+/* CATEGORY CARDS */
+
+.kala-card {
+    background: #FFFFFF;
+    border: 1px solid #D8E5DE;
+    padding: 22px;
+    min-height: 145px;
+    margin-bottom: 12px;
+    transition: 0.2s ease;
+}
+
+.kala-card:hover {
+    border-color: #39AFA6;
+    background: #F0F8F4;
+}
+
+.kala-card-number {
+    font-family: Consolas, monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: #39AFA6;
+    margin-bottom: 12px;
+}
+
+.kala-card h3 {
+    font-size: 20px;
+    margin: 0 0 9px 0;
+}
+
+.kala-card p {
+    font-size: 12px;
+    color: #788B89;
+    line-height: 1.6;
+}
+
+/* CONTENT SECTIONS */
+
+.kala-content-section {
+    background: #FFFFFF;
+    border: 1px solid #D8E5DE;
+    border-left: 3px solid #80BDB4;
+    padding: 24px;
+    margin: 12px 0;
+}
+
+.kala-content-section h3 {
+    font-size: 23px;
+    margin-bottom: 12px;
+}
+
+.kala-content-section p {
+    line-height: 1.85;
+}
+
+.kala-detail-label {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: #399B94;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+/* CHALLENGE */
+
+.kala-challenge {
+    background: #E4F1EC;
+    border: 1px solid #C8DED5;
+    border-left: 5px solid #39AFA6;
+    padding: 27px;
+    margin: 18px 0;
+}
+
+/* CLASSICAL VERSE */
+
+.kala-verse {
+    background: #F1F5F0;
+    border-left: 4px solid #C29A58;
+    padding: 24px;
+    margin: 15px 0;
+    line-height: 2;
+}
+
+.kala-verse-text {
+    font-family: Georgia, serif;
+    font-size: 21px;
+    color: #164E59;
+    line-height: 2;
+}
+
+/* RESOURCE CARDS */
+
+.kala-resource {
+    background: #FFFFFF;
+    border: 1px solid #D8E5DE;
+    padding: 17px;
+    margin: 8px 0;
+}
+
+.kala-resource a {
+    color: #205C70;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.kala-resource p {
+    font-size: 13px;
+    color: #788B89;
+}
+
+/* PROGRESS */
+
+div[data-testid="stProgressBar"] > div > div {
+    background: #39AFA6 !important;
+}
+/* MAIN KALAS INTRO CARD */
+
+div[class*="st-key-kala-overview-card"] {
+    background: #E4F1EC !important;
+    border: 1px solid #9CCFC3 !important;
+    border-left: 6px solid #39AFA6 !important;
+    padding: 30px 34px !important;
+    margin: 18px 0 28px 0 !important;
+}
+
+/* FEATURED SKILL INTRO CARD */
+
+div[class*="st-key-kala-feature-card"] {
+    background: #E4F1EC !important;
+    border: 1px solid #9CCFC3 !important;
+    border-left: 5px solid #39AFA6 !important;
+    padding: 26px 30px !important;
+    margin: 14px 0 24px 0 !important;
+}
+
+
+div[class*="st-key-kala-insight-"] {
+    background: #FFFFFF !important;
+    border: 1px solid #B7D4CE !important;
+    border-top: 4px solid #39AFA6 !important;
+    padding: 22px 24px !important;
+    margin-bottom: 18px !important;
+    min-height: 220px;
+    box-sizing: border-box;
+}
+
+div[class*="st-key-kala-insight-"] h4 {
+    margin-top: 0 !important;
+    margin-bottom: 14px !important;
+    color: #164E59 !important;
+}
+
+div[class*="st-key-kala-insight-"] p {
+    line-height: 1.8 !important;
+    color: #405B5A !important;
+}
+</style>
+"""

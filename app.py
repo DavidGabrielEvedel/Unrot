@@ -1,9 +1,15 @@
 import random
 import time
+import json
+import uuid
 import streamlit as st
 import sympy as sp
-from styles import apply_styles, WILDCARD_CSS
+import plotly.graph_objects as go
+from styles import apply_styles, WILDCARD_CSS, CS_PREP_CSS, TODO_CSS, KALAS_CSS
+from datetime import date, timedelta
+from pathlib import Path
 from logic import (
+    KALA_PROGRESS_PATH,
     load_activities,
     get_daily_greeting,
     get_completed_count,
@@ -18,7 +24,15 @@ from logic import (
     get_daily_gita_verse,
     get_daily_life_sciences_questions,
     load_wildcard_questions, 
-    get_daily_wildcard_questions
+    get_daily_wildcard_questions,
+    load_cs_questions,
+    get_daily_cs_questions,
+    load_kalas,
+    load_json,
+    save_json,
+    get_week_key,
+    get_featured_skill,
+    continue_featured_skill
 )
 apply_styles()
 import html
@@ -785,6 +799,468 @@ def render_wildcard():
                 st.session_state.wildcard_submitted = False
 
                 st.rerun()
+                
+# TO-DO LIST
+
+TODO_FILE = Path(__file__).resolve().parent / "data_sources" / "todo_data.json"
+
+
+def load_todo_data():
+
+    TODO_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    if not TODO_FILE.exists():
+        return {
+            "sections": ["Personal"],
+            "tasks": []
+        }
+
+    with open(TODO_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_todo_data(data):
+
+    with open(TODO_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)
+
+
+def render_todo():
+
+    st.markdown(
+        f"<style>{TODO_CSS}</style>",
+        unsafe_allow_html=True
+    )
+
+    data = load_todo_data()
+
+    sections = data["sections"]
+    tasks = data["tasks"]
+
+    today = date.today()
+
+    # HEADER
+    st.markdown("""
+        <div class="todo-eyebrow">PERSONAL ORGANISATION</div>
+        <div class="todo-heading">My Tasks.</div>
+        <div class="todo-subtitle">
+            Make time for what matters.
+        </div>
+    """, unsafe_allow_html=True)
+
+    completed_tasks = [t for t in tasks if t["completed"]]
+    pending_tasks = [t for t in tasks if not t["completed"]]
+
+    st.markdown(
+        f"""
+        <div class="todo-task-meta">
+            {len(completed_tasks):02d} COMPLETED
+            &nbsp;&nbsp;·&nbsp;&nbsp;
+            {len(pending_tasks):02d} REMAINING
+            &nbsp;&nbsp;·&nbsp;&nbsp;
+            {len(tasks):02d} TOTAL TASKS
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.divider()
+
+    # ADD TASK + CREATE SECTION
+    col1, col2 = st.columns([1.5, 1])
+
+    with col1:
+
+        st.markdown(
+            '<div class="todo-label">+ ADD A TASK</div>',
+            unsafe_allow_html=True
+        )
+
+        with st.form("todo_add_form", clear_on_submit=True):
+
+            task_title = st.text_input(
+                "Task",
+                placeholder="What needs to get done?"
+            )
+
+            task_section = st.selectbox(
+                "Section",
+                sections
+            )
+
+            has_deadline = st.checkbox("Set a deadline")
+
+            deadline = None
+
+            if has_deadline:
+                deadline = st.date_input(
+                    "Deadline",
+                    value=today,
+                    min_value=today
+                )
+
+            add_task = st.form_submit_button(
+                "Add Task",
+                use_container_width=True
+            )
+
+            if add_task and task_title.strip():
+
+                tasks.append({
+                    "id": str(uuid.uuid4()),
+                    "title": task_title.strip(),
+                    "section": task_section,
+                    "deadline": deadline.isoformat() if deadline else None,
+                    "completed": False,
+                    "completed_on": None
+                })
+
+                save_todo_data(data)
+                st.rerun()
+
+    with col2:
+
+        st.markdown(
+            '<div class="todo-label">+ CREATE A SECTION</div>',
+            unsafe_allow_html=True
+        )
+
+        with st.form("todo_section_form", clear_on_submit=True):
+
+            new_section = st.text_input(
+                "Folder name",
+                placeholder="e.g. College, Work, Home"
+            )
+
+            create_section = st.form_submit_button(
+                "Create Section",
+                use_container_width=True
+            )
+
+            if create_section and new_section.strip():
+
+                if new_section.strip() not in sections:
+
+                    sections.append(new_section.strip())
+                    save_todo_data(data)
+                    st.rerun()
+
+                else:
+                    st.warning("This section already exists.")
+
+    st.divider()
+
+    # UPCOMING TASKS + CALENDAR
+    st.markdown(
+        '<div class="todo-label">UPCOMING</div>',
+        unsafe_allow_html=True
+    )
+
+    col1, col2 = st.columns([1.4, 1])
+
+    upcoming = sorted(
+        [
+            t for t in tasks
+            if not t["completed"]
+            and t["deadline"]
+            and date.fromisoformat(t["deadline"]) >= today
+        ],
+        key=lambda t: t["deadline"]
+    )
+
+    with col1:
+
+        if upcoming:
+
+            for task in upcoming[:4]:
+
+                deadline_date = date.fromisoformat(task["deadline"])
+
+                st.markdown(
+                    f"""
+                    <div class="todo-task-meta">
+                        {deadline_date.strftime("%d %b %Y").upper()}
+                        &nbsp;·&nbsp; {task["section"].upper()}
+                    </div>
+                    <div class="todo-task-title">
+                        {task["title"]}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+        else:
+
+            st.markdown(
+                '<div class="todo-subtitle">No upcoming deadlines.</div>',
+                unsafe_allow_html=True
+            )
+
+    with col2:
+
+        selected_date = st.date_input(
+            "Calendar",
+            value=today,
+            key="todo_calendar"
+        )
+
+        selected_tasks = [
+            t for t in tasks
+            if t["deadline"] == selected_date.isoformat()
+            and not t["completed"]
+        ]
+
+        st.caption(
+            f"{len(selected_tasks)} task(s) due on "
+            f"{selected_date.strftime('%d %b %Y')}."
+        )
+
+        for task in selected_tasks:
+
+            st.markdown(
+                f"• {task['title']}",
+                unsafe_allow_html=True
+            )
+
+    st.divider()
+
+    # TASK SECTIONS
+
+    st.markdown(
+        '<div class="todo-label">YOUR TASKS</div>',
+        unsafe_allow_html=True
+    )
+
+    selected_section = st.selectbox(
+        "View section",
+        ["All Sections"] + sections,
+        key="todo_section_filter"
+    )
+
+    filtered_tasks = [
+        t for t in tasks
+        if selected_section == "All Sections"
+        or t["section"] == selected_section
+    ]
+
+    active_tasks = [t for t in filtered_tasks if not t["completed"]]
+    finished_tasks = [t for t in filtered_tasks if t["completed"]]
+
+    # Pending tasks
+
+    for task in active_tasks:
+
+        with st.container(key=f"todo_card_{task['id']}"):
+
+            col1, col2, col3 = st.columns([5, 1.4, 0.7])
+
+            with col1:
+
+                st.markdown(
+                    f"""
+                    <div class="todo-task-title">
+                        {task["title"]}
+                    </div>
+                    <div class="todo-task-meta">
+                        {task["section"].upper()}
+                        {" · " + task["deadline"] if task["deadline"] else ""}
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+            with col2:
+
+                if st.button(
+                    "Complete",
+                    key=f"todo_complete_{task['id']}"
+                ):
+
+                    task["completed"] = True
+                    task["completed_on"] = today.isoformat()
+
+                    save_todo_data(data)
+                    st.rerun()
+
+            with col3:
+
+                if st.button(
+                    "×",
+                    key=f"todo_delete_{task['id']}"
+                ):
+
+                    data["tasks"] = [
+                        t for t in data["tasks"]
+                        if t["id"] != task["id"]
+                    ]
+
+                    save_todo_data(data)
+                    st.rerun()
+
+    if not active_tasks:
+
+        st.markdown(
+            '<div class="todo-subtitle">Nothing pending. Enjoy the breathing room.</div>',
+            unsafe_allow_html=True
+        )
+
+    # Completed tasks
+
+    if finished_tasks:
+
+        with st.expander(
+            f"COMPLETED · {len(finished_tasks)}"
+        ):
+
+            for task in finished_tasks:
+
+                col1, col2 = st.columns([5, 1])
+
+                with col1:
+
+                    st.markdown(
+                        f"""
+                        <div class="todo-completed">
+                            {task["title"]}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                with col2:
+
+                    if st.button(
+                        "Delete",
+                        key=f"todo_delete_done_{task['id']}"
+                    ):
+
+                        data["tasks"] = [
+                            t for t in data["tasks"]
+                            if t["id"] != task["id"]
+                        ]
+
+                        save_todo_data(data)
+                        st.rerun()
+
+    st.divider()
+
+    # ACTIVITY HEATMAP
+    st.markdown(
+        '<div class="todo-label">YOUR CONSISTENCY</div>',
+        unsafe_allow_html=True
+    )
+
+    st.markdown(
+        '<div class="todo-subtitle">Every completed task adds up.</div>',
+        unsafe_allow_html=True
+    )
+
+    # Last 35 days
+
+    start_date = today - timedelta(days=34)
+
+    activity = {}
+
+    for task in tasks:
+
+        completed_on = task.get("completed_on")
+
+        if completed_on:
+
+            activity[completed_on] = (
+                activity.get(completed_on, 0) + 1
+            )
+
+    # Align calendar to Monday
+
+    calendar_start = start_date - timedelta(
+        days=start_date.weekday()
+    )
+
+    dates = [
+        calendar_start + timedelta(days=i)
+        for i in range(42)
+    ]
+
+    z_values = []
+    hover_text = []
+
+    for week in range(6):
+
+        row_values = []
+        row_hover = []
+
+        for day in range(7):
+
+            current_date = dates[week * 7 + day]
+
+            count = activity.get(current_date.isoformat(), 0)
+
+            row_values.append(count)
+
+            row_hover.append(
+                f"{current_date.strftime('%d %b %Y')}<br>"
+                f"{count} task(s) completed"
+            )
+
+        z_values.append(row_values)
+        hover_text.append(row_hover)
+
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=z_values,
+            x=["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            y=["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
+            text=hover_text,
+            hovertemplate="%{text}<extra></extra>",
+            colorscale=[
+                [0, "#E9EDE9"],
+                [0.25, "#C5DAD5"],
+                [0.5, "#91B9B2"],
+                [0.75, "#528D8B"],
+                [1, "#173D50"]
+            ],
+            showscale=False,
+            xgap=5,
+            ygap=5
+        )
+    )
+
+    fig.update_layout(
+        height=210,
+        margin=dict(l=5, r=5, t=5, b=5),
+        paper_bgcolor="#F8F7F2",
+        plot_bgcolor="#F8F7F2",
+        font=dict(
+            family="Consolas",
+            size=10,
+            color="#527487"
+        ),
+        yaxis=dict(
+            autorange="reversed",
+            showgrid=False,
+            zeroline=False
+        ),
+        xaxis=dict(
+            side="top",
+            showgrid=False,
+            zeroline=False
+        )
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True,
+        config={"displayModeBar": False}
+    )
+
+    st.markdown(
+        '<div class="todo-task-meta">LAST 35 DAYS · DAILY COMPLETION ACTIVITY</div>',
+        unsafe_allow_html=True
+    )
+    
 #LIFE SCIENCES
 from styles import LIFE_SCIENCES_CSS
 def render_life_sciences():
@@ -1045,6 +1521,358 @@ def render_life_sciences():
             st.session_state.pop("life_chemistry_score", None)
 
             st.rerun()
+def render_cs_math(content):
+    if not content:
+        return
+
+    content = str(content)
+
+    # Convert standard LaTeX delimiters to Streamlit-compatible delimiters
+    content = content.replace(r"\(", "$")
+    content = content.replace(r"\)", "$")
+    content = content.replace(r"\[", "$$")
+    content = content.replace(r"\]", "$$")
+
+    st.markdown(content)          
+def render_cs_prep():
+
+    st.markdown(
+        f"<style>{CS_PREP_CSS}</style>",
+        unsafe_allow_html=True
+    )
+
+    # Load question bank
+    if "cs_all_questions" not in st.session_state:
+        st.session_state.cs_all_questions = load_cs_questions()
+
+    all_questions = st.session_state.cs_all_questions
+
+    if len(all_questions) < 7:
+        st.error("The question bank must contain at least 7 questions.")
+        return
+
+    # Fixed daily question set
+    if "cs_questions" not in st.session_state:
+        st.session_state.cs_questions = get_daily_cs_questions(
+        all_questions, 7
+        )
+        st.session_state.cs_version = 0
+        st.session_state.cs_submitted = False
+
+    questions = st.session_state.cs_questions
+    version = st.session_state.cs_version
+
+    # PAGE INTRODUCTION
+    st.markdown("""
+        <div class="cs-eyebrow">
+            COMPUTER SCIENCE · GATE PREPARATION
+        </div>
+        <div class="cs-daily-label">
+            TODAY'S QUESTION SET &nbsp;·&nbsp;
+            07 QUESTIONS &nbsp;·&nbsp; DAILY PRACTICE
+        </div>
+    """, unsafe_allow_html=True)
+
+    # QUIZ
+    if not st.session_state.cs_submitted:
+
+        with st.form(key=f"cs_form_{version}"):
+
+            for i, q in enumerate(questions):
+
+                with st.container(key=f"cs_q_{i}"):
+
+                    st.markdown(
+                        f"""
+                        <div class="cs-meta">
+                            <span>{html.escape(q.get('subject', 'COMPUTER SCIENCE'))}</span>
+                            <span>{q.get('question_type', 'MCQ')} · {q.get('marks', 1)} MARK</span>
+                        </div>
+                        <div class="cs-topic">
+                            {html.escape(q.get('topic', ''))}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    st.markdown(
+                        f"**Q.{i + 1:02d}**"
+                    )
+
+                    render_cs_math(q["question"])
+
+                    qtype = q.get("question_type", "MCQ").upper()
+                    options = q.get("options", {})
+
+                    if qtype == "MCQ":
+
+                        choices = [
+                            f"{key}. {value}"
+                            for key, value in options.items()
+                        ]
+
+                        st.radio(
+                            "Choose one answer",
+                            choices,
+                            index=None,
+                            key=f"cs_answer_{version}_{i}",
+                            label_visibility="collapsed"
+                        )
+
+                    elif qtype == "MSQ":
+
+                        choices = [
+                            f"{key}. {value}"
+                            for key, value in options.items()
+                        ]
+
+                        st.multiselect(
+                            "Select all correct answers",
+                            choices,
+                            key=f"cs_answer_{version}_{i}",
+                            placeholder="Select all that apply"
+                        )
+
+                    elif qtype == "NAT":
+
+                        st.text_input(
+                            "Enter your numerical answer",
+                            key=f"cs_answer_{version}_{i}",
+                            placeholder="Enter numerical value"
+                        )
+
+            submitted = st.form_submit_button(
+                "Check My Answers",
+                use_container_width=True,
+                type="primary"
+            )
+
+        if submitted:
+
+            answers = []
+
+            for i, q in enumerate(questions):
+
+                answer = st.session_state.get(
+                    f"cs_answer_{version}_{i}"
+                )
+
+                qtype = q.get("question_type", "MCQ").upper()
+
+                if qtype in ("MCQ", "MSQ") and answer:
+                    answer = [
+                        item.split(".", 1)[0].strip()
+                        for item in (
+                            answer if isinstance(answer, list) else [answer]
+                        )
+                    ]
+
+                answers.append(answer)
+
+            st.session_state.cs_answers = answers
+            st.session_state.cs_submitted = True
+            st.rerun()
+
+            # RESULTS
+    if st.session_state.cs_submitted:
+
+        answers = st.session_state.cs_answers
+
+        def check_cs_answer(q, selected):
+
+            correct = q.get("correct_answer", [])
+            qtype = q.get("question_type", "MCQ").upper()
+
+            if not correct or selected is None or selected == [] or selected == "":
+                return False
+
+            if qtype in ("MCQ", "MSQ"):
+                return set(selected) == set(correct)
+
+            if qtype == "NAT":
+                try:
+                    return abs(
+                        float(str(selected).strip()) - float(correct[0])
+                    ) <= 0.01
+                except (ValueError, TypeError, IndexError):
+                    return False
+
+            return False
+
+        def format_cs_answer(q, answer):
+
+            if answer is None or answer == [] or answer == "":
+                return "Not attempted"
+
+            qtype = q.get("question_type", "MCQ").upper()
+            options = q.get("options", {})
+
+            if qtype in ("MCQ", "MSQ"):
+                if not isinstance(answer, list):
+                    answer = [answer]
+
+                return " · ".join(
+                    f"{key}. {options.get(key, 'Option unavailable')}"
+                    for key in answer
+                )
+
+            if isinstance(answer, list):
+                return str(answer[0]) if answer else "Not attempted"
+
+            return str(answer)
+
+        results = [
+            check_cs_answer(q, a)
+            for q, a in zip(questions, answers)
+        ]
+
+        attempted = sum(
+            1 for a in answers if a is not None and a != [] and a != ""
+        )
+
+        correct_count = sum(results)
+        incorrect_count = attempted - correct_count
+        unattempted_count = 7 - attempted
+
+        # PERFORMANCE HEADER
+        st.markdown(
+            f"""
+            <div class="cs-results-eyebrow">
+                DAILY PRACTICE · PERFORMANCE REPORT
+            </div>
+
+            <div class="cs-score">
+                {correct_count:02d}
+                <span>/ 07</span>
+            </div>
+
+            <div class="cs-results-subtitle">
+                QUESTIONS ANSWERED CORRECTLY
+            </div>
+
+            <div class="cs-performance-line">
+                <span>{correct_count} CORRECT</span>
+                <span>{incorrect_count} INCORRECT</span>
+                <span>{unattempted_count} UNATTEMPTED</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # PROGRESS BAR
+        st.progress(correct_count / 7)
+
+
+        # INDIVIDUAL QUESTION REVIEWS
+        for i, (q, selected, correct) in enumerate(
+            zip(questions, answers, results)
+        ):
+
+            attempted_question = (
+                selected is not None
+                and selected != []
+                and selected != ""
+            )
+
+            if not attempted_question:
+                status = "NOT ATTEMPTED"
+                container_key = f"cs_review_unattempted_{i}"
+
+            elif correct:
+                status = "CORRECT"
+                container_key = f"cs_review_correct_{i}"
+
+            else:
+                status = "INCORRECT"
+                container_key = f"cs_review_incorrect_{i}"
+
+            options = q.get("options", {})
+            correct_answers = q.get("correct_answer", [])
+
+            with st.container(key=container_key):
+
+                st.html(f"""
+                    <div class="cs-review-label">
+                        QUESTION {i + 1:02d}
+                        &nbsp;—&nbsp; {status}
+                    </div>
+
+                    <div class="cs-review-meta">
+                        {html.escape(q.get('subject', 'COMPUTER SCIENCE'))}
+                        &nbsp;·&nbsp;
+                        {html.escape(q.get('question_type', 'MCQ'))}
+                        &nbsp;·&nbsp;
+                        {q.get('marks', 1)} MARK
+                    </div>
+                """)
+
+                st.markdown(
+                    '<div class="cs-review-section">QUESTION</div>',
+                    unsafe_allow_html=True
+                )
+
+                render_cs_math(q["question"])
+
+                # YOUR ANSWER
+                st.markdown(
+                    '<div class="cs-review-section">YOUR RESPONSE</div>',
+                    unsafe_allow_html=True
+                )
+
+                render_cs_math(format_cs_answer(q, selected))
+
+                # CORRECT ANSWER
+                if correct_answers:
+
+                    correct_display = format_cs_answer(
+                        q, correct_answers
+                    )
+
+                    render_cs_math(correct_display)
+
+                    st.markdown(
+                        f'<div class="cs-review-answer">{html.escape(correct_display)}</div>',
+                        unsafe_allow_html=True
+                    )
+
+                # WORKED SOLUTION
+                if q.get("solution"):
+
+                    st.markdown(
+                        '<div class="cs-review-section">WORKED SOLUTION</div>',
+                        unsafe_allow_html=True
+                    )
+
+                    render_cs_math(q["solution"])
+                # CONCEPTUAL EXPLANATION
+                if q.get("explanation"):
+
+                    st.markdown(
+                        '<div class="cs-review-section">KEY CONCEPT</div>',
+                        unsafe_allow_html=True
+                    )
+
+                    render_cs_math(q["explanation"])
+
+        st.markdown("")
+        col1, col2 = st.columns(2)
+
+        with col1:
+            if st.button(
+                "↻ Reattempt",
+                key="cs_reattempt",
+                use_container_width=True
+            ):
+                st.session_state.cs_answers = []
+                st.session_state.cs_submitted = False
+                st.session_state.cs_version += 1
+                st.rerun()
+
+        with col2:
+            st.markdown(
+                '<div class="cs-set-note">YOUR DAILY SET · 07 QUESTIONS</div>',
+                unsafe_allow_html=True
+            )
 # ----- Easier ISC / JEE Integral Alternative -----
 
 def render_exam_integral():
@@ -1117,8 +1945,7 @@ def render_physics():
     # ---------- SESSION STATE ----------
 
     if "physics_question" not in st.session_state:
-        questions = load_physics_questions()
-        st.session_state.physics_question = questions[0]
+        st.session_state.physics_question = get_random_physics_question()
 
     question = st.session_state.physics_question
 
@@ -1283,15 +2110,15 @@ def render_physics():
         questions = load_physics_questions()
 
         available = [
-            q for q in questions
-            if q["id"] != question_id
+        q for q in questions
+        if q["id"] != question_id
         ]
 
         if available:
-            import random
-
             st.session_state.physics_question = random.choice(available)
             st.session_state.physics_checked = False
+
+            st.session_state.pop("physics_user_answer", None)
 
             st.rerun() 
             
@@ -1302,7 +2129,6 @@ from pathlib import Path
 
 # ==========================================
 # DSA DATA LOADER
-# ==========================================
 
 @st.cache_data
 def load_neetcode_data():
@@ -1502,6 +2328,960 @@ def render_dsa():
             problem["neetcode_link"],
             use_container_width=True
         )
+BASE_DIR = Path(__file__).resolve().parent
+
+KALAS_PATH = BASE_DIR / "data_sources" / "skills.jsonl"
+KALA_PROGRESS_PATH = BASE_DIR / "data_sources" / "kala_progress.json"
+KALA_SCHEDULE_PATH = BASE_DIR / "data_sources" / "kala_schedule.json"
+def get_progress():
+
+    return load_json(KALA_PROGRESS_PATH, {})
+
+
+def update_progress(skill_id, status):
+
+    progress = get_progress()
+
+    progress[skill_id] = status
+
+    save_json(KALA_PROGRESS_PATH, progress)
+
+
+def get_skill_status(skill):
+
+    progress = get_progress()
+
+    return progress.get(skill["id"], "Not started")
+
+# REUSABLE CONTENT RENDERERS
+
+def render_list(items):
+
+    if not items:
+        st.caption("No information available.")
+
+    elif isinstance(items, list):
+
+        for item in items:
+            st.markdown(f"- {item}")
+
+    else:
+        st.write(items)
+
+
+def render_content_section(title, content):
+
+    if not content:
+        return
+
+    st.markdown(
+        f"""
+        <div class="kala-content-section">
+            <div class="kala-detail-label">LEARNING MATERIAL</div>
+            <h3>{title}</h3>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    if isinstance(content, list):
+        render_list(content)
+    else:
+        st.write(content)
+
+
+def render_introduction(introduction):
+
+    st.markdown("### Understanding the Skill")
+
+    sections = [
+        ("Overview", "overview"),
+        ("What It Involves", "what_it_involves"),
+        ("Why It Matters", "importance"),
+        ("Modern Relevance", "modern_relevance")
+    ]
+
+    for title, key in sections:
+
+        content = introduction.get(key)
+
+        if content:
+
+            st.markdown(f"#### {title}")
+            st.write(content)
+
+    applications = introduction.get("applications", [])
+
+    if applications:
+
+        st.markdown("#### Real-World Applications")
+
+        render_list(applications)
+
+
+def render_learning_objectives(objectives):
+
+    st.markdown("### What You Will Learn")
+
+    render_list(objectives)
+
+
+def render_tutorial(tutorial):
+
+    st.markdown("### The Learning Framework")
+
+    sections = [
+        ("01 · Foundations", "foundations"),
+        ("02 · Essential Knowledge", "essential_knowledge"),
+        ("03 · Practical Methods", "practical_methods"),
+        ("04 · Common Mistakes", "common_mistakes"),
+        ("05 · Intermediate Development", "intermediate_development"),
+        ("06 · Advanced Exploration", "advanced_exploration")
+    ]
+
+    for title, key in sections:
+
+        content = tutorial.get(key)
+
+        if not content:
+            continue
+
+        with st.expander(title, expanded=(key == "foundations")):
+
+            if isinstance(content, list):
+                render_list(content)
+            else:
+                st.write(content)
+
+
+def render_exercises(exercises):
+
+    st.markdown("### Put the Skill into Practice")
+
+    for index, exercise in enumerate(exercises, 1):
+
+        with st.expander(
+            f"{index:02d} · {exercise.get('title', 'Exercise')}"
+        ):
+
+            st.markdown("**Instructions**")
+            st.write(exercise.get("instructions", ""))
+
+            st.markdown("**Expected Output**")
+            st.write(exercise.get("expected_output", ""))
+
+
+def render_weekly_challenge(challenge):
+
+    if not challenge:
+        return
+
+    st.markdown(
+        f"""
+        <div class="kala-challenge">
+            <div class="kala-detail-label">YOUR WEEKLY CHALLENGE</div>
+            <h2>{challenge.get('title', 'Weekly Challenge')}</h2>
+            <p>{challenge.get('objective', '')}</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**Estimated Time**")
+        st.write(challenge.get("estimated_time", "Not specified"))
+
+    with col2:
+        st.markdown("**Difficulty**")
+        st.write(challenge.get("difficulty", "Not specified"))
+
+    st.markdown("#### Instructions")
+    render_list(challenge.get("instructions", []))
+
+    st.markdown("#### Tools Required")
+    render_list(challenge.get("tools_required", []))
+
+    st.markdown("#### Expected Output")
+    st.write(challenge.get("expected_output", ""))
+
+    st.markdown("#### Success Criteria")
+    render_list(challenge.get("success_criteria", []))
+
+
+def render_classical_connection(connection):
+
+    if not connection:
+        return
+
+    st.markdown("### Classical Connection")
+
+    st.write(f"**Text:** {connection.get('text_name', 'Not specified')}")
+
+    st.write(
+        f"**Reference:** {connection.get('verse_reference', 'Not specified')}"
+    )
+
+    verse = connection.get("verse")
+
+    if verse:
+
+        st.markdown(
+            f"""
+            <div class="kala-verse">
+                <div class="kala-verse-text">{verse}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    if connection.get("transliteration"):
+        st.markdown("**Transliteration**")
+        st.write(connection["transliteration"])
+
+    if connection.get("translation"):
+        st.markdown("**Translation**")
+        st.write(connection["translation"])
+
+    if connection.get("explanation"):
+        st.markdown("**Interpretation**")
+        st.write(connection["explanation"])
+
+
+def render_traditional_connection(connection):
+
+    if not connection:
+        return
+
+    st.markdown("### Traditional Kala Connection")
+
+    st.write(f"**Reference:** {connection.get('reference', '')}")
+
+    st.write(
+        f"**Relationship:** {connection.get('relationship', '')}"
+    )
+
+    st.write(connection.get("explanation", ""))
+
+    if connection.get("historical_source"):
+
+        st.caption(
+            f"Historical source: {connection['historical_source']}"
+        )
+
+
+def render_resources(resources):
+
+    st.markdown("### Learning Resources")
+
+    for resource in resources:
+
+        name = resource.get("name", "Resource")
+        url = resource.get("url", "")
+        description = resource.get("description", "")
+
+        st.markdown(
+            f"""
+            <div class="kala-resource">
+                <a href="{url}" target="_blank">{name} ↗</a>
+                <p>{description}</p>
+                <small>
+                    {resource.get('type', '')}
+                    &nbsp; | &nbsp;
+                    {resource.get('level', '')}
+                    &nbsp; | &nbsp;
+                    {resource.get('cost', '')}
+                </small>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+def render_further_exploration(exploration):
+
+    if not exploration:
+        return
+
+    st.markdown("### Beyond the Fundamentals")
+
+    if exploration.get("interdisciplinary_connection"):
+
+        st.markdown("**Interdisciplinary Connection**")
+        st.write(exploration["interdisciplinary_connection"])
+
+    if exploration.get("advanced_project"):
+
+        st.markdown("**Advanced Project**")
+        st.write(exploration["advanced_project"])
+
+
+def render_questions(questions):
+
+    if questions:
+
+        st.markdown("### Questions to Ponder")
+
+        render_list(questions)
+
+# COMPLETE SKILL EXPERIENCE
+
+def render_skill_detail(skill, from_featured=False):
+
+    if st.button("← BACK TO THE 128 KALAS", key="back_to_kalas"):
+
+        st.session_state.pop("selected_kala_id", None)
+        st.rerun()
+
+    st.markdown(
+        f"""
+        <div class="kala-eyebrow">
+            KALA {skill['number']:03} / {skill['category']}
+        </div>
+
+        <h1>{skill['name']}</h1>
+        """,
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        f"{skill['subcategory']} · {skill['difficulty']}"
+    )
+
+    # PROGRESS CONTROL
+
+    current_status = get_skill_status(skill)
+
+    status_options = [
+        "Not started",
+        "In progress",
+        "Completed"
+    ]
+
+    selected_status = st.selectbox(
+        "Learning progress",
+        status_options,
+        index=status_options.index(current_status),
+        key=f"status_{skill['id']}"
+    )
+
+    if selected_status != current_status:
+        update_progress(skill["id"], selected_status)
+        st.rerun()
+
+    # CONTENT
+
+    st.divider()
+
+    render_introduction(skill.get("introduction", {}))
+
+    st.divider()
+
+    render_learning_objectives(
+        skill.get("learning_objectives", [])
+    )
+
+    st.divider()
+
+    render_tutorial(skill.get("tutorial", {}))
+
+    st.divider()
+
+    render_exercises(
+        skill.get("practical_exercises", [])
+    )
+
+    st.divider()
+
+    render_weekly_challenge(
+        skill.get("weekly_challenge", {})
+    )
+
+    st.divider()
+
+    render_classical_connection(
+        skill.get("classical_connection")
+    )
+
+    render_traditional_connection(
+        skill.get("traditional_kala_connection")
+    )
+
+    st.divider()
+
+    render_resources(
+        skill.get("resources", [])
+    )
+
+    st.divider()
+
+    render_questions(
+        skill.get("questions_to_ponder", [])
+    )
+
+    render_further_exploration(
+        skill.get("further_exploration", {})
+    )
+
+    # RELATED SKILLS
+
+    related_ids = skill.get(
+        "further_exploration", {}
+    ).get("related_skills", [])
+
+    if related_ids:
+
+        all_skills = load_kalas()
+
+        related = [
+            s for s in all_skills
+            if s["id"] in related_ids
+        ]
+
+        if related:
+
+            st.divider()
+            st.markdown("### Related Skills")
+
+            cols = st.columns(min(3, len(related)))
+
+            for col, related_skill in zip(cols, related):
+
+                with col:
+
+                    st.markdown(
+                        f"**{related_skill['name']}**"
+                    )
+
+                    if st.button(
+                        "EXPLORE →",
+                        key=f"related_{related_skill['id']}"
+                    ):
+
+                        st.session_state["selected_kala_id"] = (
+                            related_skill["id"]
+                        )
+
+                        st.rerun()
+
+# CATEGORY DIRECTORY
+
+def render_kala_categories(group):
+
+    categories = {}
+
+    for skill in group:
+
+        name = skill["subcategory"]
+
+        categories.setdefault(name, []).append(skill)
+
+    category_items = list(categories.items())
+
+    for start in range(0, len(category_items), 3):
+
+        cols = st.columns(3)
+
+        for col, (name, category_skills) in zip(
+            cols, category_items[start:start + 3]
+        ):
+
+            first = category_skills[0]["number"]
+            last = category_skills[-1]["number"]
+
+            with col:
+
+                st.markdown(
+                    f"""
+                    <div class="kala-card">
+                        <div class="kala-card-number">
+                            KALAS {first:03} — {last:03}
+                        </div>
+                        <h3>{name}</h3>
+                        <p>
+                            {len(category_skills)} capabilities
+                            to explore
+                        </p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                if st.button(
+                    "EXPLORE CATEGORY →",
+                    key=f"category_{name}"
+                ):
+
+                    st.session_state["selected_category"] = name
+                    st.rerun()
+
+    selected = st.session_state.get("selected_category")
+
+    if selected in categories:
+
+        st.markdown(f"### {selected}")
+
+        for skill in categories[selected]:
+
+            col1, col2, col3 = st.columns([5, 2, 2])
+
+            with col1:
+                st.write(
+                    f"**{skill['number']:03} · {skill['name']}**"
+                )
+
+            with col2:
+                st.caption(skill["difficulty"])
+
+            with col3:
+
+                if st.button(
+                    "OPEN →",
+                    key=f"open_{skill['id']}"
+                ):
+
+                    st.session_state["selected_kala_id"] = skill["id"]
+                    st.rerun()
+# MAIN PAGE
+def render_kalas():
+    st.markdown(KALAS_CSS, unsafe_allow_html=True)
+
+    skills = load_kalas()
+
+    classical = [
+        s for s in skills
+        if s["category"] == "Classical Human Arts"
+    ]
+
+    modern = [
+        s for s in skills
+        if s["category"] == "Modern Life Mastery"
+    ]
+
+    progress = get_progress()
+
+    completed = sum(
+        1 for s in skills
+        if progress.get(s["id"]) == "Completed"
+    )
+
+    in_progress = sum(
+        1 for s in skills
+        if progress.get(s["id"]) == "In progress"
+    )
+
+    overall_percentage = (
+        completed / len(skills) * 100
+        if skills else 0
+    )
+
+    # DETAIL VIEW
+
+    selected_id = st.session_state.get("selected_kala_id")
+
+    if selected_id:
+
+        selected_skill = next(
+            (s for s in skills if s["id"] == selected_id),
+            None
+        )
+
+        if selected_skill:
+            render_skill_detail(selected_skill)
+            return
+
+        st.session_state.pop("selected_kala_id", None)
+
+    # HERO
+
+    st.caption("UNROT / THE HUMAN DEVELOPMENT COLLECTION")
+
+    with st.container(key="kala-overview-card"):
+
+        st.markdown(
+            "<div style='font-family:Georgia; font-size:76px; "
+            "color:#80BDB4; line-height:1.1; margin-bottom:12px;'>१२८</div>",
+            unsafe_allow_html=True
+        )
+
+        st.caption("A LIFETIME CURRICULUM")
+
+        st.markdown("## The Modern 128 Kalas.")
+
+        st.write(
+            "An exploration of 128 capabilities that shape a capable, "
+            "creative, thoughtful and self-reliant individual. "
+            "From classical human arts to modern life mastery."
+        )
+    
+    # STATISTICS
+
+    cols = st.columns(4)
+
+    stats = [
+        (len(skills), "TOTAL KALAS"),
+        (len(classical), "CLASSICAL ARTS"),
+        (len(modern), "MODERN MASTERY"),
+        (completed, "COMPLETED")
+    ]
+
+    for col, (number, label) in zip(cols, stats):
+
+        with col:
+
+            st.markdown(
+                f"""
+                <div class="kala-stat">
+                    <div class="kala-stat-number">
+                        {number:03}
+                    </div>
+                    <div class="kala-stat-label">
+                        {label}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    # OVERALL PROGRESS
+
+    st.markdown("### Your Learning Journey")
+
+    st.progress(overall_percentage / 100)
+
+    col1, col2, col3 = st.columns(3)
+
+    col1.metric("Completed", completed)
+    col2.metric("In Progress", in_progress)
+    col3.metric("Remaining", len(skills) - completed - in_progress)
+
+    st.caption(f"{overall_percentage:.1f}% of the 128 Kalas completed.")
+
+    st.divider()
+
+    # FEATURED SKILL
+
+    featured, current_week, next_week, continued = (
+        get_featured_skill(skills)
+    )
+
+    featured_status = get_skill_status(featured)
+
+    intro = featured.get("introduction", {})
+    tutorial = featured.get("tutorial", {})
+
+    st.markdown(
+        '<div class="kala-eyebrow">YOUR CURRENT LEARNING FOCUS</div>',
+        unsafe_allow_html=True
+    )
+
+    with st.container(key="kala-feature-card"):
+
+        st.caption("KALA OF THE WEEK")
+
+        st.markdown(
+            f"## {featured['name']}"
+        )
+
+        st.write(intro.get("overview", ""))
+
+        st.caption(
+            f"KALA {featured['number']:03}  |  "
+            f"{featured['category']}  |  "
+            f"{featured['difficulty'].upper()}"
+        )
+
+    # FEATURED SKILL CONTENT
+
+    st.markdown("## Explore This Week's Skill")
+
+    # FIRST ROW
+
+    feature_col1, feature_col2 = st.columns(2, gap="medium")
+
+    with feature_col1:
+
+        with st.container(key="kala-insight-importance"):
+
+            st.markdown("#### Why It Matters")
+            st.write(intro.get("importance", ""))
+
+    with feature_col2:
+
+        with st.container(key="kala-insight-involves"):
+
+            st.markdown("#### What It Involves")
+            st.write(intro.get("what_it_involves", ""))
+
+    # SECOND ROW
+
+    feature_col3, feature_col4 = st.columns(2, gap="medium")
+
+    with feature_col3:
+
+        with st.container(key="kala-insight-modern"):
+
+            st.markdown("#### Modern Relevance")
+            st.write(intro.get("modern_relevance", ""))
+
+    with feature_col4:
+
+        with st.container(key="kala-insight-mistakes"):
+
+            st.markdown("#### Common Mistakes")
+            render_list(tutorial.get("common_mistakes", []))
+
+    # LEARNING OBJECTIVES
+
+    with st.container(border=True):
+
+        st.markdown("### Learning Objectives")
+        render_list(featured.get("learning_objectives", []))
+
+
+    # TUTORIAL MATERIAL
+
+    st.markdown("### Learn the Skill")
+
+    with st.expander("Foundations and Essential Knowledge", expanded=True):
+
+        st.markdown("**Foundations**")
+        st.write(tutorial.get("foundations", ""))
+
+        st.markdown("**Essential Knowledge**")
+        render_list(tutorial.get("essential_knowledge", []))
+
+    with st.expander("Practical Methods"):
+
+        render_list(tutorial.get("practical_methods", []))
+
+    with st.expander("Intermediate Development"):
+
+        st.write(tutorial.get("intermediate_development", ""))
+
+    with st.expander("Advanced Exploration"):
+
+        st.write(tutorial.get("advanced_exploration", ""))
+
+    with st.expander("Weekly Challenge"):
+
+        render_weekly_challenge(
+            featured.get("weekly_challenge", {})
+        )
+
+    with st.expander("Practical Exercises"):
+
+        render_exercises(
+            featured.get("practical_exercises", [])
+        )
+
+    with st.expander("Learning Resources"):
+
+        render_resources(
+            featured.get("resources", [])
+        )
+
+    with st.expander("Classical and Traditional Connections"):
+
+        render_classical_connection(
+            featured.get("classical_connection")
+        )
+
+        render_traditional_connection(
+            featured.get("traditional_kala_connection")
+        )
+    # FEATURED ACTIONS
+
+    st.markdown("#### Your Next Step")
+
+    st.caption(f"Current status: {featured_status}")
+
+    if st.button(
+        "OPEN FULL LEARNING EXPERIENCE →",
+        key="open_featured"
+    ):
+
+        st.session_state["selected_kala_id"] = featured["id"]
+        st.rerun()
+
+    if st.button(
+        "CONTINUE THIS SKILL FOR NEXT WEEK →",
+        key="continue_featured"
+    ):
+
+        continue_featured_skill(featured, next_week)
+
+        st.success(
+            f"{featured['name']} is scheduled for next week."
+        )
+
+    st.caption(
+        "Your current weekly selection remains unchanged. "
+        "Continuing schedules the same skill for the following week."
+    )
+
+    st.divider()
+
+    # SEARCH AND FILTERS
+
+
+    st.markdown("## Discover Other Kalas")
+
+    st.caption(
+        "Search the collection or narrow it down by category, difficulty and progress."
+    )
+
+    search = st.text_input(
+        "Search the 128 Kalas",
+        placeholder="e.g. Research, Leadership, Linux, Communication..."
+    )
+
+    filter_col1, filter_col2, filter_col3 = st.columns(3)
+
+    with filter_col1:
+
+        category_filter = st.selectbox(
+            "Collection",
+            [
+                "All",
+                "Classical Human Arts",
+                "Modern Life Mastery"
+            ],
+            key="kala_category_filter"
+        )
+
+    with filter_col2:
+
+        difficulty_filter = st.selectbox(
+            "Difficulty",
+            [
+                "All",
+                "Beginner",
+                "Intermediate",
+                "Advanced"
+            ],
+            key="kala_difficulty_filter"
+        )
+
+    with filter_col3:
+
+        status_filter = st.selectbox(
+            "Progress",
+            [
+                "All",
+                "Not started",
+                "In progress",
+                "Completed"
+            ],
+            key="kala_status_filter"
+        )
+
+    # Only display results when the user actively searches
+    # or changes a filter.
+
+    search_active = (
+        bool(search.strip())
+        or category_filter != "All"
+        or difficulty_filter != "All"
+        or status_filter != "All"
+    )
+
+    if search_active:
+
+        filtered = []
+
+        for skill in skills:
+
+            skill_status = get_skill_status(skill)
+
+            searchable_text = " ".join([
+                skill["name"],
+                skill["category"],
+                skill["subcategory"],
+                skill["difficulty"]
+            ]).lower()
+
+            if search.strip().lower() not in searchable_text:
+                continue
+
+            if category_filter != "All":
+                if skill["category"] != category_filter:
+                    continue
+
+            if difficulty_filter != "All":
+                if skill["difficulty"] != difficulty_filter:
+                    continue
+
+            if status_filter != "All":
+                if skill_status != status_filter:
+                    continue
+
+            filtered.append(skill)
+
+        st.markdown(f"### {len(filtered)} matching Kalas")
+
+        if not filtered:
+
+            st.info("No matching skills found. Try different filters.")
+
+        else:
+
+            for start in range(0, len(filtered), 3):
+
+                cols = st.columns(3)
+
+                for col, skill in zip(cols, filtered[start:start + 3]):
+
+                    with col:
+
+                        with st.container(border=True):
+
+                            st.caption(
+                                f"KALA {skill['number']:03} · "
+                                f"{skill['difficulty'].upper()}"
+                            )
+
+                            st.markdown(f"### {skill['name']}")
+
+                            st.caption(skill["subcategory"])
+
+                            st.write(
+                                f"Progress: {get_skill_status(skill)}"
+                            )
+
+                            if st.button(
+                                "OPEN SKILL →",
+                                key=f"search_open_{skill['id']}"
+                            ):
+
+                                st.session_state["selected_kala_id"] = skill["id"]
+                                st.rerun()
+
+    # CATEGORY COLLECTIONS
+
+    st.markdown("## The Collections")
+
+    st.markdown("### I. Classical Human Arts")
+
+    st.caption(
+        "Creativity, intellect, expression, culture and character."
+    )
+
+    render_kala_categories(classical)
+
+    st.divider()
+
+    st.markdown("### II. Modern Life Mastery")
+
+    st.caption(
+        "Practical competence for navigating the modern world."
+    )
+
+    render_kala_categories(modern)
+
+        
+
             
 # ---------- BHAGAVAD GITA ----------
 
@@ -1894,7 +3674,7 @@ with st.sidebar:
 
     pages = ["Home"] + [
         activity["page"] for activity in activities.values()
-    ] + ["To-do List"]
+    ]
 
     selected_page = st.radio(
         "Navigate",
@@ -1978,44 +3758,6 @@ if selected_page == "Home":
                 ):
                     st.session_state.navigate_to = activity["page"]
                     st.rerun()
-
-# ----- To-do list -----
-elif selected_page == "To-do List":
-    st.title("Your to-do list")
-    st.caption("Tasks are temporary in this first version.")
-
-    with st.form("add_task_form", clear_on_submit=True):
-        task = st.text_input("What do you want to get done?")
-        submitted = st.form_submit_button("Add task")
-
-        if submitted:
-            if task.strip():
-                st.session_state.tasks.append({
-                    "text": task.strip(),
-                    "done": False,
-                })
-                st.rerun()
-            else:
-                st.warning("Enter a task first.")
-
-    for index, item in enumerate(st.session_state.tasks):
-        col1, col2 = st.columns([5, 1])
-
-        with col1:
-            checked = st.checkbox(
-                item["text"],
-                value=item["done"],
-                key=f"task_{index}",
-            )
-
-            if checked != item["done"]:
-                item["done"] = checked
-                st.rerun()
-
-        with col2:
-            if st.button("Delete", key=f"delete_{index}"):
-                st.session_state.tasks.pop(index)
-                st.rerun()
 
 # ----- Activity placeholder pages -----
 # ----- Activity pages -----
@@ -2160,6 +3902,12 @@ else:
             render_life_sciences()
         elif selected_page == "Wildcard":
             render_wildcard()
+        elif selected_page == "CS Prep":
+            render_cs_prep()
+        elif selected_page == "To-do List":
+            render_todo()
+        elif selected_page == "Weekly Skill":
+            render_kalas()
         # ----- OTHER ACTIVITY PLACEHOLDERS -----
 
         else:

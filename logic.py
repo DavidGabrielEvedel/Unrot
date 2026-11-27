@@ -410,3 +410,106 @@ def get_daily_wildcard_questions(questions, count=5):
 
     seed = int(date.today().strftime("%Y%m%d"))
     return random.Random(seed).sample(questions, count)
+
+@st.cache_data
+def load_cs_questions():
+    questions = []
+
+    path = Path(__file__).resolve().parent / "data_sources" / "tech_prep.jsonl"
+
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                questions.append(json.loads(line))
+
+    return questions
+
+def get_daily_cs_questions(questions, count=7):
+    today = date.today().isoformat()
+
+    rng = random.Random(f"cs_prep_{today}")
+
+    return rng.sample(questions, min(count, len(questions)))
+
+BASE_DIR = Path(__file__).resolve().parent
+from datetime import date, timedelta
+KALAS_PATH = BASE_DIR / "data_sources" / "skills.jsonl"
+KALA_PROGRESS_PATH = BASE_DIR / "data_sources" / "kala_progress.json"
+KALA_SCHEDULE_PATH = BASE_DIR / "data_sources" / "kala_schedule.json"
+@st.cache_data
+def load_kalas():
+
+    skills = []
+
+    with open(KALAS_PATH, "r", encoding="utf-8") as file:
+        for line in file:
+            if line.strip():
+                skills.append(json.loads(line))
+
+    return sorted(skills, key=lambda x: x["number"])
+
+
+def load_json(path, default):
+
+    if path.exists():
+        with open(path, "r", encoding="utf-8") as file:
+            return json.load(file)
+
+    return default
+
+
+def save_json(path, data):
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(path, "w", encoding="utf-8") as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
+
+def get_week_key(day):
+
+    iso = day.isocalendar()
+
+    return f"{iso.year}-W{iso.week:02d}"
+
+
+def get_featured_skill(skills):
+
+    schedule = load_json(KALA_SCHEDULE_PATH, {})
+
+    today = date.today()
+
+    current_week = get_week_key(today)
+    next_week = get_week_key(today + timedelta(days=7))
+
+    # Previously scheduled skill takes priority.
+    if current_week in schedule:
+
+        skill_number = schedule[current_week]
+
+        featured = next(
+            (s for s in skills if s["number"] == skill_number),
+            None
+        )
+
+        if featured:
+            return featured, current_week, next_week, True
+
+    # Otherwise use the deterministic weekly rotation.
+    week_number = today.isocalendar().week
+
+    featured = skills[(week_number - 1) % len(skills)]
+
+    schedule[current_week] = featured["number"]
+
+    save_json(KALA_SCHEDULE_PATH, schedule)
+
+    return featured, current_week, next_week, False
+
+
+def continue_featured_skill(featured, next_week):
+
+    schedule = load_json(KALA_SCHEDULE_PATH, {})
+
+    schedule[next_week] = featured["number"]
+
+    save_json(KALA_SCHEDULE_PATH, schedule)
