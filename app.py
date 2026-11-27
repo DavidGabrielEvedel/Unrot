@@ -247,6 +247,34 @@ def render_mental_maths():
         except ValueError:
             return False
 
+    def show_review_message(message, correct=True):
+        if correct:
+            background = "#DDF0E2"
+            text_color = "#245C35"
+            border = "#A5CDAE"
+            icon = "✅"
+        else:
+            background = "#F5DEDE"
+            text_color = "#8B3030"
+            border = "#D9AAAA"
+            icon = "❌"
+
+        st.markdown(
+        f"""
+        <div style="
+            background-color: {background};
+            color: {text_color};
+            border: 1px solid {border};
+            border-radius: 0px;
+            padding: 12px 16px;
+            font-weight: 600;
+            margin: 8px 0;
+        ">
+            {icon} {message}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     # ----- DISPLAY QUESTIONS -----
 
     for index, question in enumerate(questions):
@@ -321,11 +349,12 @@ def render_mental_maths():
         if result and result["answer"] == current_answer:
 
             if result["correct"]:
-                st.success("Correct! Well calculated.")
+                show_review_message("Correct! Well calculated.")
 
             else:
-                st.error(
-                    f"Incorrect. Correct answer: {question['answer']}"
+                show_review_message(
+                    f"Incorrect. Correct answer: {question['answer']}",
+                    correct=False
                 )
 
     # ----- CHECK ALL ANSWERS (UNCHANGED FUNCTIONALITY) -----
@@ -359,12 +388,13 @@ def render_mental_maths():
 
             if is_correct:
                 score += 1
-                st.success(f"Question {index + 1}: Correct!")
+                show_review_message(f"Question {index + 1}: Correct!")
 
             else:
-                st.error(
+                show_review_message(
                     f"Question {index + 1}: Incorrect. "
-                    f"Correct answer: {question['answer']}"
+                    f"Correct answer: {question['answer']}",
+                    correct=False
                 )
 
         st.session_state.mental_maths_score = score
