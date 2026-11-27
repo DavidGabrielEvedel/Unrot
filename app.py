@@ -202,30 +202,7 @@ def generate_mental_maths_set():
 def render_mental_maths():
 
     st.caption("ABACUS MENTAL CALCULATION")
-    st.markdown("""
-    <style>
-
-    /* Mental Maths answer feedback */
-div[data-testid="stAlert"] {
-    border-radius: 0px !important;
-}
-
-    /* Correct answer — light green */
-div[data-testid="stAlert"][kind="success"] {
-    background-color: #DDF0E2 !important;
-    color: #245C35 !important;
-    border: 1px solid #A5CDAE !important;
-}
-
-    /* Incorrect answer — light red */
-div[data-testid="stAlert"][kind="error"] {
-    background-color: #F5DEDE !important;
-    color: #8B3030 !important;
-    border: 1px solid #D9AAAA !important;
-}
-
-</style>
-""", unsafe_allow_html=True)
+    
     if "mental_maths_questions" not in st.session_state:
         st.session_state.mental_maths_questions = generate_mental_maths_set()
 
@@ -284,7 +261,11 @@ div[data-testid="stAlert"][kind="error"] {
 
             for sign, number in question["numbers"]:
                 symbol = "+" if sign == 1 else "−"
-                st.markdown(f"`{symbol} {number}`")
+                st.markdown(
+                f'<div style="font-size: 1.4rem; font-weight: 700; color: var(--text-color);">'
+                f'{symbol} {number}</div>',
+                unsafe_allow_html=True,
+)
 
         elif question["type"] == "alphabet":
 
@@ -292,7 +273,11 @@ div[data-testid="stAlert"][kind="error"] {
 
             for sign, letter in question["numbers"]:
                 symbol = "+" if sign == 1 else "−"
-                st.markdown(f"`{symbol} {letter}`")
+                st.markdown(
+                f'<div style="font-size: 1.4rem; font-weight: 700; color: var(--text-color);">'
+                f'{symbol} {letter}</div>',
+                unsafe_allow_html=True,
+)
 
         else:
             st.markdown(f"### {question['question']}")
