@@ -5,9 +5,10 @@ import uuid
 import streamlit as st
 import sympy as sp
 import plotly.graph_objects as go
-from styles import apply_styles, WILDCARD_CSS, CS_PREP_CSS, TODO_CSS, KALAS_CSS
+from styles import apply_styles, WILDCARD_CSS, CS_PREP_CSS, TODO_CSS, KALAS_CSS, BUTTON_CSS
 from datetime import date, timedelta
 from pathlib import Path
+from auth import render_auth, logout
 from logic import (
     KALA_PROGRESS_PATH,
     load_activities,
@@ -35,7 +36,12 @@ from logic import (
     continue_featured_skill
 )
 apply_styles()
+st.markdown(
+    f"<style>{BUTTON_CSS}</style>",
+    unsafe_allow_html=True
+)
 import html
+
 @st.fragment(run_every="1s")
 def live_timer():
 
@@ -3651,6 +3657,14 @@ def render_linux_commands():
         st.session_state.daily_linux_commands = get_daily_linux_commands()
         st.rerun()
 
+# ----- AUTHENTICATION GATE -----
+
+if not (
+    st.session_state.get("authenticated", False)
+    or st.session_state.get("guest_mode", False)
+):
+    render_auth()
+    st.stop()
 # ----- Initialise session state -----
 if "completed" not in st.session_state:
     st.session_state.completed = set()
@@ -3692,6 +3706,10 @@ with st.sidebar:
     st.divider()
     st.caption("Small sessions. Active learning. Real progress.")
 
+    st.divider()
+
+    if st.button("LOG OUT", use_container_width=True):
+        logout()
 # ----- Home dashboard -----
 if selected_page == "Home":
     completed_count = get_completed_count(

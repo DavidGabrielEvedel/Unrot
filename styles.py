@@ -1394,3 +1394,50 @@ div[class*="st-key-kala-insight-"] p {
 }
 </style>
 """
+BUTTON_CSS = """
+
+/* LOGIN AND SIGNUP FORM BUTTONS */
+
+.stFormSubmitButton > button,
+div[data-testid="stFormSubmitButton"] button {
+
+    background: #39AFA6 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+
+    border: 2px solid #D6AD55 !important;
+    border-radius: 0px !important;
+
+    font-weight: 700 !important;
+    letter-spacing: 0.8px !important;
+}
+
+/* GUEST BUTTON */
+
+div[class*="st-key-auth_guest"] button {
+
+    background: #39AFA6 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+
+    border: 2px solid #D6AD55 !important;
+    border-radius: 0px !important;
+
+    font-weight: 700 !important;
+    letter-spacing: 0.8px !important;
+}
+
+/* HOVER */
+
+.stFormSubmitButton > button:hover,
+div[data-testid="stFormSubmitButton"] button:hover,
+div[class*="st-key-auth_guest"] button:hover {
+
+    background: #D6AD55 !important;
+    color: #173D50 !important;
+    -webkit-text-fill-color: #173D50 !important;
+
+    border: 2px solid #39AFA6 !important;
+}
+
+"""

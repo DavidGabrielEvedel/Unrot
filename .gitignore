@@ -30,3 +30,7 @@ Thumbs.db
 
 # External source repository (large)
 data_sources/integration-test-suites/
+
+.streamlit/secrets.toml
+
+*.db
