@@ -224,10 +224,6 @@ def apply_styles():
        GENERAL CLEANUP
     ========================= */
 
-    #MainMenu {
-        visibility: hidden;
-    }
-
     footer {
         visibility: hidden;
     }
@@ -286,7 +282,17 @@ def apply_styles():
     
     /* LeetCode / NeetCode buttons */
     .stButton button[kind="secondary"] {
-    color: white !important;
+    background: #278C89 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
+    border: 1px solid #174C59 !important;
+    border-radius: 0px !important;
+}
+
+    .stButton button[kind="secondary"]:hover {
+    background: #174C59 !important;
+    color: #FFFFFF !important;
+    -webkit-text-fill-color: #FFFFFF !important;
 }
     
 
@@ -329,6 +335,49 @@ def apply_styles():
     padding: 12px 16px;
 }
 
+/* ---------- STREAMLIT NATIVE CONTROLS ---------- */
+
+/* Preserve existing header background */
+header[data-testid="stHeader"] {
+    background-color: var(--paper) !important;
+}
+
+/* Sidebar collapse / expand controls */
+[data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarExpandButton"] {
+    background-color: #DCEAE5 !important;
+    border: 1px solid #A8C9BF !important;
+    border-radius: 3px !important;
+}
+
+/* Native control icons */
+[data-testid="stSidebarCollapseButton"] svg,
+[data-testid="stSidebarExpandButton"] svg {
+    color: #07596B !important;
+    fill: #07596B !important;
+    stroke: #07596B !important;
+}
+
+/* Top-right toolbar buttons */
+header[data-testid="stHeader"] button {
+    color: #07596B !important;
+    background-color: #DCEAE5 !important;
+    border: 1px solid #A8C9BF !important;
+}
+
+/* Toolbar icons */
+header[data-testid="stHeader"] button svg {
+    color: #07596B !important;
+    fill: #07596B !important;
+    stroke: #07596B !important;
+}
+
+/* Hover */
+header[data-testid="stHeader"] button:hover,
+[data-testid="stSidebarCollapseButton"]:hover,
+[data-testid="stSidebarExpandButton"]:hover {
+    background-color: #9AD8D1 !important;
+}
 
     </style>
     """, unsafe_allow_html=True)

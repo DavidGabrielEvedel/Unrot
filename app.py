@@ -202,7 +202,30 @@ def generate_mental_maths_set():
 def render_mental_maths():
 
     st.caption("ABACUS MENTAL CALCULATION")
+    st.markdown("""
+    <style>
 
+    /* Mental Maths answer feedback */
+div[data-testid="stAlert"] {
+    border-radius: 0px !important;
+}
+
+    /* Correct answer — light green */
+div[data-testid="stAlert"][kind="success"] {
+    background-color: #DDF0E2 !important;
+    color: #245C35 !important;
+    border: 1px solid #A5CDAE !important;
+}
+
+    /* Incorrect answer — light red */
+div[data-testid="stAlert"][kind="error"] {
+    background-color: #F5DEDE !important;
+    color: #8B3030 !important;
+    border: 1px solid #D9AAAA !important;
+}
+
+</style>
+""", unsafe_allow_html=True)
     if "mental_maths_questions" not in st.session_state:
         st.session_state.mental_maths_questions = generate_mental_maths_set()
 
